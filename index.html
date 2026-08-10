@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ökuprófið — æfingavefur</title>
+<style>
+  :root{
+    --blue:#1b4e8a; --blue-dark:#143a68; --accent:#2f80ed;
+    --bg:#eef2f7; --card:#ffffff; --ink:#1c2733; --muted:#5c6b7a;
+    --ok:#1e8e4e; --ok-bg:#e7f5ec; --err:#d64545; --err-bg:#fbeaea;
+    --line:#dbe3ec; --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;}
+  .wrap{max-width:680px; margin:0 auto; padding:16px 16px 48px;}
+  header.top{background:var(--blue); color:#fff; padding:18px 16px;}
+  header.top .wrap{padding:0; max-width:680px; display:flex; align-items:center; gap:12px;}
+  .logo{width:40px;height:40px;flex:none;}
+  header.top h1{font-size:1.15rem; font-weight:700; letter-spacing:.2px;}
+  header.top p{font-size:.8rem; opacity:.85;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-top:16px; box-shadow:0 1px 3px rgba(16,42,67,.06);}
+  h2{font-size:1.05rem; margin-bottom:10px;}
+  .sub{color:var(--muted); font-size:.86rem; line-height:1.45;}
+  /* mode cards */
+  .modes{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .mode{background:var(--card); border:2px solid var(--line); border-radius:var(--radius); padding:16px; cursor:pointer; text-align:left; font:inherit;}
+  .mode.sel{border-color:var(--accent); background:#f0f6ff;}
+  .mode .mt{font-weight:700; font-size:.98rem; margin-bottom:4px;}
+  .mode .md{font-size:.8rem; color:var(--muted); line-height:1.4;}
+  /* chips */
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .chip{border:1.5px solid var(--line); background:#fff; border-radius:999px; padding:7px 13px; font-size:.82rem; cursor:pointer; font:inherit; color:var(--ink);}
+  .chip.sel{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .seg{display:flex; gap:8px; margin-top:10px;}
+  .seg button{flex:1; border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:10px 0; font:inherit; font-weight:600; cursor:pointer;}
+  .seg button.sel{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .toggle{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:.9rem; cursor:pointer; user-select:none;}
+  .toggle input{width:18px; height:18px; accent-color:var(--accent);}
+  .btn{display:block; width:100%; border:none; border-radius:12px; padding:15px 0; font:inherit; font-size:1.02rem; font-weight:700; cursor:pointer; margin-top:18px;}
+  .btn.primary{background:var(--accent); color:#fff;}
+  .btn.primary:active{background:#2568c4;}
+  .btn.ghost{background:#fff; border:1.5px solid var(--line); color:var(--ink);}
+  .btn.warn{background:var(--err); color:#fff;}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  /* quiz */
+  .qtop{display:flex; justify-content:space-between; align-items:center; margin-top:16px; font-size:.85rem; color:var(--muted); font-weight:600;}
+  #timer{font-variant-numeric:tabular-nums; background:#fff; border:1px solid var(--line); border-radius:8px; padding:4px 10px; color:var(--ink);}
+  #timer.low{color:var(--err); border-color:var(--err);}
+  .pbar{height:6px; background:#dde5ee; border-radius:99px; margin-top:8px; overflow:hidden;}
+  .pbar div{height:100%; background:var(--accent); width:0%; transition:width .25s;}
+  .qcat{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--blue); background:#e5eefb; border-radius:6px; padding:3px 8px; margin-bottom:10px;}
+  .qtext{font-size:1.08rem; font-weight:600; line-height:1.5;}
+  .qimg{display:flex; justify-content:center; margin:14px 0 2px;}
+  .qimg svg{width:110px; height:110px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.15));}
+  .answers{display:grid; gap:10px; margin-top:16px;}
+  .ans{border:2px solid var(--line); background:#fff; border-radius:12px; padding:13px 14px; font:inherit; font-size:.95rem; text-align:left; cursor:pointer; line-height:1.4; display:flex; gap:10px; align-items:flex-start;}
+  .ans .tag{flex:none; width:24px; height:24px; border-radius:50%; background:#eef2f7; color:var(--muted); font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .ans.sel{border-color:var(--accent); background:#f0f6ff;}
+  .ans.correct{border-color:var(--ok); background:var(--ok-bg);}
+  .ans.correct .tag{background:var(--ok); color:#fff;}
+  .ans.wrong{border-color:var(--err); background:var(--err-bg);}
+  .ans.wrong .tag{background:var(--err); color:#fff;}
+  .ans:disabled{cursor:default;}
+  .explain{margin-top:14px; background:#f6f8fb; border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:10px; padding:12px 14px; font-size:.88rem; line-height:1.5; color:#33414f;}
+  /* results */
+  .score-hero{text-align:center; padding:26px 18px;}
+  .score-big{font-size:3rem; font-weight:800; line-height:1;}
+  .score-pct{font-size:1rem; color:var(--muted); margin-top:6px;}
+  .badge{display:inline-block; margin-top:12px; padding:7px 18px; border-radius:999px; font-weight:700; font-size:.95rem;}
+  .badge.pass{background:var(--ok-bg); color:var(--ok);}
+  .badge.fail{background:var(--err-bg); color:var(--err);}
+  .cats .row{margin-top:12px;}
+  .cats .lbl{display:flex; justify-content:space-between; font-size:.84rem; margin-bottom:5px;}
+  .cats .lbl b{font-weight:600;}
+  .cats .bar{height:8px; background:#e3e9f1; border-radius:99px; overflow:hidden;}
+  .cats .bar div{height:100%; border-radius:99px;}
+  .review-item{border-top:1px solid var(--line); padding:14px 0;}
+  .review-item:first-of-type{border-top:none; padding-top:4px;}
+  .review-q{font-weight:600; font-size:.94rem; line-height:1.45;}
+  .review-line{font-size:.87rem; margin-top:7px; line-height:1.45;}
+  .review-line.you{color:var(--err);}
+  .review-line.right{color:var(--ok); font-weight:600;}
+  .review-exp{font-size:.84rem; color:#4a5866; margin-top:7px; background:#f6f8fb; border-radius:8px; padding:9px 11px; line-height:1.5;}
+  .review-img svg{width:72px;height:72px;margin-top:8px;}
+  .btnrow{display:grid; gap:10px; grid-template-columns:1fr 1fr; margin-top:6px;}
+  .btnrow .btn{margin-top:10px;}
+  .hidden{display:none !important;}
+  .quitrow{margin-top:14px; text-align:center;}
+  .quit{background:none; border:none; color:var(--muted); font:inherit; font-size:.82rem; cursor:pointer; text-decoration:underline;}
+  @media (max-width:480px){ .modes{grid-template-columns:1fr;} .btnrow{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <svg class="logo" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#fff"/><circle cx="24" cy="24" r="18" fill="#d64545"/><circle cx="24" cy="24" r="11" fill="#fff"/><text x="24" y="29" text-anchor="middle" font-size="12" font-weight="800" fill="#1b4e8a" font-family="system-ui">B</text></svg>
+    <div>
+      <h1>Ökuprófið — æfingavefur</h1>
+      <p>Undirbúningur fyrir skriflega ökuprófið (B-flokkur)</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ HEIMASKJÁR ============ -->
+  <section id="home" class="screen active">
+    <div class="modes">
+      <button class="mode sel" id="modeAefing" onclick="setMode('aefing')">
+        <div class="mt">📘 Æfingahamur</div>
+        <div class="md">Krossaspurningar með 4 valmöguleikum. Þú velur flokka og lengd.</div>
+      </button>
+      <button class="mode" id="modeProf" onclick="setMode('prof')">
+        <div class="mt">📝 Prófhamur</div>
+        <div class="md">Eins og alvöru prófið: 50 fullyrðingar, rétt eða rangt, 45 mínútur. 45 rétt svör þarf til að ná.</div>
+      </button>
+    </div>
+
+    <div class="card" id="optCats">
+      <h2>Efnisflokkar</h2>
+      <p class="sub">Veldu einn eða fleiri flokka — eða æfðu allt í bland.</p>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="card" id="optLen">
+      <h2>Fjöldi spurninga</h2>
+      <div class="seg" id="lenSeg">
+        <button data-n="10" onclick="setLen(10)">10</button>
+        <button data-n="25" class="sel" onclick="setLen(25)">25</button>
+        <button data-n="50" onclick="setLen(50)">50</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="instant"> Sýna rétt svar strax eftir hverja spurningu</label>
+    </div>
+
+    <div class="card hidden" id="profInfo">
+      <h2>Um prófhaminn</h2>
+      <p class="sub">Þessi hamur líkir eftir rafræna prófinu hjá Frumherja: 50 fullyrðingar úr öllum efnisflokkum sem þú svarar með „rétt“ eða „rangt“. Tíminn er 45 mínútur og til að standast þarf 45 réttar (90%). Ekki er hægt að fara til baka — alveg eins og í alvörunni.</p>
+    </div>
+
+    <button class="btn primary" onclick="startQuiz()">Hefja próf</button>
+    <p class="sub" style="text-align:center; margin-top:14px;" id="bankInfo"></p>
+  </section>
+
+  <!-- ============ PRÓFSKJÁR ============ -->
+  <section id="quiz" class="screen">
+    <div class="qtop">
+      <span id="qCount"></span>
+      <span id="timer" class="hidden">45:00</span>
+    </div>
+    <div class="pbar"><div id="pfill"></div></div>
+    <div class="card">
+      <span class="qcat" id="qCat"></span>
+      <div class="qtext" id="qText"></div>
+      <div class="qimg" id="qImg"></div>
+      <div class="answers" id="qAns"></div>
+      <div class="explain hidden" id="qExp"></div>
+      <button class="btn primary hidden" id="nextBtn" onclick="nextQ()">Áfram</button>
+    </div>
+    <div class="quitrow"><button class="quit" onclick="quitQuiz()">Hætta við próf</button></div>
+  </section>
+
+  <!-- ============ NIÐURSTÖÐUR ============ -->
+  <section id="results" class="screen">
+    <div class="card score-hero">
+      <div class="score-big" id="rScore"></div>
+      <div class="score-pct" id="rPct"></div>
+      <div id="rBadge"></div>
+      <div class="sub" id="rNote" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card cats">
+      <h2>Frammistaða eftir flokkum</h2>
+      <div id="rCats"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="rRevTitle">Rangt svöruð atriði</h2>
+      <p class="sub hidden" id="rPerfect">Engin villa — allt rétt! 🎉</p>
+      <div id="rReview"></div>
+      <button class="btn ghost" id="showAllBtn" onclick="toggleAll()">Sýna allar spurningar</button>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn warn" id="retryBtn" onclick="retryWrong()">Æfa villurnar</button>
+      <button class="btn primary" onclick="goHome()">Nýtt próf</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =================== FLOKKAR =================== */
+const CATS = {
+  merki:    "Umferðarmerki",
+  forgangur:"Forgangsreglur",
+  hradi:    "Hraði og stöðvunarvegalengd",
+  stodvun:  "Stöðvun og lagning",
+  gangandi: "Óvarðir vegfarendur",
+  ljos:     "Ljós og merkjagjöf",
+  okutaeki: "Ástand ökutækis og öryggisbúnaður",
+  mannlegt: "Mannlegir þættir",
+  akstur:   "Almennir aksturshættir",
+  skirteini:"Ökuskírteini og reglur",
+  ohopp:    "Viðbrögð við óhöppum",
+  vetur:    "Vetrarakstur og aðstæður"
+};
+
+/* =================== UMFERÐARMERKI (SVG) =================== */
+const YEL = "#f7c600";
+const SIGNS = {
+  stop: `<svg viewBox="0 0 100 100"><polygon points="30,4 70,4 96,30 96,70 70,96 30,96 4,70 4,30" fill="#c8102e" stroke="#fff" stroke-width="5"/><text x="50" y="60" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="Arial">STOP</text></svg>`,
+  bidskylda: `<svg viewBox="0 0 100 100"><polygon points="50,96 4,10 96,10" fill="#c8102e"/><polygon points="50,82 18,18 82,18" fill="${YEL}"/></svg>`,
+  adalbraut: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" transform="rotate(45 50 50)" fill="#fff" stroke="#8a8a8a" stroke-width="2"/><rect x="30" y="30" width="40" height="40" transform="rotate(45 50 50)" fill="${YEL}"/></svg>`,
+  hradi50: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#c8102e"/><circle cx="50" cy="50" r="36" fill="${YEL}"/><text x="50" y="63" text-anchor="middle" font-size="34" font-weight="800" fill="#111" font-family="Arial">50</text></svg>`,
+  innakstur: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#c8102e"/><rect x="18" y="43" width="64" height="14" rx="3" fill="#fff"/></svg>`,
+  framurbann: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#c8102e"/><circle cx="50" cy="50" r="38" fill="${YEL}"/><path d="M25 62 h18 v-9 l6 -6 h-16 l-8 8 z" fill="#c8102e"/><circle cx="30" cy="64" r="4.5" fill="#c8102e"/><circle cx="41" cy="64" r="4.5" fill="#c8102e"/><path d="M55 62 h18 v-9 l6 -6 h-16 l-8 8 z" fill="#111"/><circle cx="60" cy="64" r="4.5" fill="#111"/><circle cx="71" cy="64" r="4.5" fill="#111"/></svg>`,
+  einstefna: `<svg viewBox="0 0 100 100"><rect x="4" y="30" width="92" height="40" rx="4" fill="#0057a8"/><path d="M20 50 h44 v-10 l20 10 -20 10 v-10 z" fill="#fff"/></svg>`,
+  hringtorg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#0057a8"/><circle cx="50" cy="50" r="14" fill="none" stroke="#fff" stroke-width="7"/><path d="M50 22 l10 12 h-20 z" fill="#fff" transform="rotate(30 50 50)"/><path d="M50 22 l10 12 h-20 z" fill="#fff" transform="rotate(150 50 50)"/><path d="M50 22 l10 12 h-20 z" fill="#fff" transform="rotate(270 50 50)"/></svg>`,
+  gangbraut: `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="8" fill="#0057a8"/><polygon points="50,14 90,86 10,86" fill="#fff"/><circle cx="47" cy="42" r="6" fill="#111"/><path d="M44 50 l-6 26 h5 l5 -18 5 18 h5 l-6 -26 z" fill="#111"/></svg>`,
+  born: `<svg viewBox="0 0 100 100"><polygon points="50,4 96,90 4,90" fill="#c8102e"/><polygon points="50,15 88,84 12,84" fill="${YEL}"/><circle cx="42" cy="45" r="5" fill="#111"/><path d="M39 51 l-4 20 h4 l3 -13 3 13 h4 l-4 -20 z" fill="#111"/><circle cx="58" cy="50" r="4" fill="#111"/><path d="M56 55 l-3 16 h3.5 l2 -10 2.5 10 h3.5 l-3.5 -16 z" fill="#111"/></svg>`,
+  halka: `<svg viewBox="0 0 100 100"><polygon points="50,4 96,90 4,90" fill="#c8102e"/><polygon points="50,15 88,84 12,84" fill="${YEL}"/><rect x="38" y="42" width="24" height="12" rx="3" fill="#111" transform="rotate(-12 50 48)"/><circle cx="41" cy="57" r="4" fill="#111"/><circle cx="59" cy="53" r="4" fill="#111"/><path d="M30 72 q6 -6 12 0 q6 6 12 0" stroke="#111" stroke-width="3" fill="none"/><path d="M46 78 q6 -6 12 0 q6 6 12 0" stroke="#111" stroke-width="3" fill="none"/></svg>`,
+  stodvunbann: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#c8102e"/><circle cx="50" cy="50" r="36" fill="#0057a8"/><line x1="24" y1="24" x2="76" y2="76" stroke="#c8102e" stroke-width="9"/><line x1="76" y1="24" x2="24" y2="76" stroke="#c8102e" stroke-width="9"/></svg>`,
+  lagningbann: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="#c8102e"/><circle cx="50" cy="50" r="36" fill="#0057a8"/><line x1="76" y1="24" x2="24" y2="76" stroke="#c8102e" stroke-width="9"/></svg>`,
+  adalbrautlok: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" transform="rotate(45 50 50)" fill="#fff" stroke="#8a8a8a" stroke-width="2"/><rect x="30" y="30" width="40" height="40" transform="rotate(45 50 50)" fill="${YEL}"/><line x1="22" y1="78" x2="78" y2="22" stroke="#333" stroke-width="8"/></svg>`,
+  einbreid: `<svg viewBox="0 0 100 100"><polygon points="50,4 96,90 4,90" fill="#c8102e"/><polygon points="50,15 88,84 12,84" fill="${YEL}"/><path d="M40 80 l4 -30 h12 l4 30 z" fill="none" stroke="#111" stroke-width="4"/><line x1="50" y1="78" x2="50" y2="55" stroke="#111" stroke-width="3" stroke-dasharray="5,4"/></svg>`
+};
+
+/* =================== SPURNINGABANKI =================== */
+/* c=flokkur, q=spurning, o=valmöguleikar, a=vísir rétts svars,
+   t=sönn fullyrðing, f=ósönn fullyrðing, e=útskýring, img=merki (valfrjálst) */
+const BANK = [
+/* ---------- UMFERÐARMERKI ---------- */
+{c:'merki', img:'stop', q:'Hvað ber þér að gera við þetta merki?',
+ o:['Stöðva bílinn alveg og veita umferð á veginum sem ekið er inn á forgang','Hægja á og halda áfram ef enginn sést','Aðeins stöðva ef umferð er mikil','Flauta og aka svo yfir gatnamótin'], a:0,
+ t:'Við stöðvunarskyldumerki ber alltaf að stöðva ökutækið alveg, jafnvel þótt engin umferð sjáist.',
+ f:'Við stöðvunarskyldumerki nægir að hægja vel á sér ef engin umferð sést.',
+ e:'Stöðvunarskylda þýðir að alltaf skal nema staðar að fullu við stöðvunarlínu eða áður en ekið er inn á veginn — óháð því hvort umferð sést. Síðan skal veita umferð á þverveginum forgang.'},
+{c:'merki', img:'bidskylda', q:'Hvað merkir þetta merki?',
+ o:['Biðskylda — veita skal umferð á veginum sem framundan er forgang','Stöðvunarskylda — alltaf skal nema staðar','Aðalbraut framundan, þú átt forganginn','Bannað að aka inn á veginn framundan'], a:0,
+ t:'Biðskyldumerkið er þríhyrningur sem snýr oddinum niður.',
+ f:'Biðskyldumerkið skyldar ökumann alltaf til að nema staðar að fullu.',
+ e:'Biðskylda þýðir að veita skal umferð á veginum framundan forgang. Ólíkt stöðvunarskyldu þarf ekki að nema staðar nema það sé nauðsynlegt til að veita forganginn. Merkið þekkist á lögun sinni — þríhyrningur á hvolfi.'},
+{c:'merki', img:'adalbraut', q:'Hvað merkir þetta merki?',
+ o:['Þú ekur á aðalbraut og umferð af hliðarvegum ber að veita þér forgang','Vegurinn framundan er einkavegur','Biðskylda gagnvart umferð framundan','Vegurinn er lokaður fyrir almenna umferð'], a:0,
+ t:'Guli tígullinn merkir aðalbraut — umferð af hliðarvegum á að veita umferð á aðalbrautinni forgang.',
+ f:'Guli tígullinn merkir að hægri reglan gildi á næstu gatnamótum.',
+ e:'Merkið táknar aðalbraut. Á aðalbraut heldur þú forgangi gagnvart umferð sem kemur af hliðarvegum, og hægri reglan gildir ekki á þeim gatnamótum. Mundu samt að forgangur leysir þig ekki undan aðgæsluskyldu.'},
+{c:'merki', img:'adalbrautlok', q:'Hvað merkir þetta merki?',
+ o:['Aðalbraut endar — þú nýtur ekki lengur forgangs aðalbrautar','Aðalbraut hefst','Vegurinn endar — snúið við','Bann við akstri í báðar áttir'], a:0,
+ t:'Merkið með strikinu yfir gula tígulinn táknar að aðalbraut endi.',
+ f:'Merkið með strikinu yfir gula tígulinn táknar að framundan sé ný aðalbraut.',
+ e:'Þegar strikað er yfir aðalbrautarmerkið endar aðalbrautin. Þá gilda almennar forgangsreglur á næstu gatnamótum — oftast hægri reglan eða biðskylda samkvæmt merkjum.'},
+{c:'merki', img:'hradi50', q:'Hvað merkir þetta merki?',
+ o:['Hámarkshraði er 50 km/klst','Lágmarkshraði er 50 km/klst','Ráðlagður hraði er 50 km/klst','Vegnúmer 50 framundan'], a:0,
+ t:'Rautt hringmerki með tölunni 50 táknar að hámarkshraði sé 50 km/klst.',
+ f:'Rautt hringmerki með tölunni 50 táknar ráðlagðan lágmarkshraða.',
+ e:'Hringlaga merki með rauðum jaðri eru bannmerki. Talan sýnir leyfilegan hámarkshraða — hér má ekki aka hraðar en 50 km/klst. Bannið gildir þar til annað merki breytir því.'},
+{c:'merki', img:'innakstur', q:'Hvað merkir þetta merki?',
+ o:['Bann við innakstri — þú mátt ekki aka inn á veginn úr þessari átt','Bann við stöðvun','Vegurinn er lokaður öllum farartækjum úr báðum áttum','Einstefna í þína átt'], a:0,
+ t:'Rautt hringmerki með hvítu þverstriki bannar innakstur úr þeirri átt sem merkið snýr að.',
+ f:'Rautt hringmerki með hvítu þverstriki táknar að vegurinn sé lokaður úr báðum áttum.',
+ e:'Þetta er bann við innakstri. Það er t.d. notað við enda einstefnugatna — umferð má koma úr hinni áttinni, svo það getur verið hættulegt að virða merkið að vettugi.'},
+{c:'merki', img:'einstefna', q:'Hvað merkir þetta merki?',
+ o:['Einstefna í þá átt sem örin bendir','Aðeins má beygja í átt örvarinnar á næstu gatnamótum','Framúrakstur leyfður','Skylt er að aka beint áfram'], a:0,
+ t:'Blátt ferhyrnt merki með hvítri ör táknar einstefnu í átt örvarinnar.',
+ f:'Á einstefnugötu má aka í báðar áttir ef gatan er breið.',
+ e:'Merkið táknar einstefnu — öll umferð á götunni fer í sömu átt. Á einstefnugötu má því víkja lengra til vinstri en ella, en aldrei aka á móti akstursstefnunni.'},
+{c:'merki', img:'hringtorg', q:'Hvað merkir þetta merki?',
+ o:['Hringtorg framundan — akið réttsælis um torgið','Hringakstur bannaður','Vegurinn liggur í hring og endar á sama stað','Skylt að snúa við'], a:0,
+ t:'Í hringtorgi er ekið réttsælis og umferð sem kemur að torginu á að veita þeim sem eru í hringtorginu forgang.',
+ f:'Í hringtorgi á umferð inni í torginu að víkja fyrir þeim sem koma inn í það.',
+ e:'Merkið sýnir hringtorg. Sá sem ekur að hringtorgi veitir umferð sem þegar er í torginu forgang, og ekið er réttsælis um torgið.'},
+{c:'merki', img:'gangbraut', q:'Hvað merkir þetta merki?',
+ o:['Gangbraut — hér eiga gangandi vegfarendur rétt á að komast yfir','Göngugata, akstur bannaður','Gangandi umferð bönnuð','Undirgöng fyrir gangandi framundan'], a:0,
+ t:'Við merkta gangbraut ber ökumanni að veita gangandi vegfarendum forgang yfir veginn.',
+ f:'Merkt gangbraut breytir engu um skyldur ökumanns gagnvart gangandi vegfarendum.',
+ e:'Merkið sýnir gangbraut. Ökumaður skal aka nægilega hægt að gangbraut til að geta stöðvað og hleypt gangandi vegfarendum yfir — og aldrei aka fram úr öðrum bíl rétt við hana.'},
+{c:'merki', img:'born', q:'Þetta viðvörunarmerki gefur til kynna:',
+ o:['Börn — t.d. nálægt skóla eða leikvelli — sýnið sérstaka aðgát','Gangandi umferð bönnuð','Leiksvæði, akstur bannaður','Skólahverfi, hámarkshraði 10 km/klst'], a:0,
+ t:'Viðvörunarmerki með börnum er sett upp þar sem búast má við börnum við eða á veginum, t.d. við skóla.',
+ f:'Viðvörunarmerki með börnum þýðir að öll umferð vélknúinna ökutækja sé bönnuð.',
+ e:'Þríhyrnd merki með rauðum jaðri eru viðvörunarmerki. Þetta varar við börnum í nánd — dragðu úr hraða og vertu viðbúinn því að barn hlaupi út á veginn, því börn meta umferð oft ranglega.'},
+{c:'merki', img:'framurbann', q:'Hvað merkir þetta merki?',
+ o:['Bann við framúrakstri','Bann við akstri tveggja bíla samhliða','Aðeins fólksbílar mega aka veginn','Tvöföld akrein framundan'], a:0,
+ t:'Merkið með rauða og svarta bílnum táknar að framúrakstur sé bannaður.',
+ f:'Merkið með rauða og svarta bílnum táknar að framúrakstur sé aðeins leyfður vörubílum.',
+ e:'Þetta bannmerki bannar framúrakstur á vélknúnum ökutækjum. Bannið gildir þar til það er fellt úr gildi með öðru merki eða við næstu vegamót samkvæmt almennum reglum.'},
+{c:'merki', img:'einbreid', q:'Þetta merki varar við:',
+ o:['Einbreiðri brú framundan','Vegur þrengist báðum megin','Göngum framundan','Bann við umferð breiðra ökutækja'], a:0,
+ t:'Við einbreiða brú skal draga úr hraða og sá sem er nær brúnni þegar bíll kemur á móti bíður að jafnaði.',
+ f:'Á einbreiðri brú á sá forgang sem ekur hraðar að brúnni.',
+ e:'Einbreiðar brýr eru algengar á íslenskum þjóðvegum og valda mörgum slysum. Dragðu vel úr hraða, sýndu tillitssemi — og ef bíll er kominn út á brúna átt þú alltaf að bíða.'},
+
+/* ---------- FORGANGSREGLUR ---------- */
+{c:'forgangur', q:'Hvað felst í hægri reglunni?',
+ o:['Sá sem fær umferð á hægri hönd á ómerktum gatnamótum veitir henni forgang','Alltaf skal aka hægra megin fram úr','Umferð frá vinstri á alltaf forgang','Hægri reglan gildir aðeins í þéttbýli'], a:0,
+ t:'Á gatnamótum þar sem engin merki gilda skal veita umferð sem kemur frá hægri forgang.',
+ f:'Á ómerktum gatnamótum skal veita umferð sem kemur frá vinstri forgang.',
+ e:'Hægri reglan gildir á gatnamótum þar sem forgangur er ekki ákveðinn með merkjum eða ljósum: sá víkur sem fær hinn á hægri hönd. Hún gildir jafnt í þéttbýli sem dreifbýli.'},
+{c:'forgangur', q:'Þú ætlar að beygja til vinstri á gatnamótum. Bíll kemur á móti og ekur beint áfram. Hver á forganginn?',
+ o:['Bíllinn sem kemur á móti — ég bíð með vinstri beygjuna','Ég, því ég kom fyrr að gatnamótunum','Sá sem er á stærri bílnum','Sá sem gefur stefnuljós fyrr'], a:0,
+ t:'Ökumaður sem beygir til vinstri skal veita umferð sem kemur á móti og ekur beint áfram forgang.',
+ f:'Umferð á móti ber að stöðva fyrir þeim sem ætlar að beygja til vinstri.',
+ e:'Við vinstri beygju þverar þú akstursleið umferðar á móti og verður því að hleypa henni fram hjá fyrst. Þetta er ein algengasta orsök alvarlegra árekstra á gatnamótum.'},
+{c:'forgangur', q:'Þú ekur af bílastæði út á götu. Hvaða regla gildir?',
+ o:['Ég veiti allri umferð á götunni forgang, líka gangandi á gangstétt','Hægri reglan gildir gagnvart umferð á götunni','Umferð á götunni skal hleypa mér inn í röðina','Ég á forgang ef ég gef stefnuljós'], a:0,
+ t:'Sá sem ekur af bílastæði, lóð eða bensínstöð inn á veg skal veita allri annarri umferð forgang.',
+ f:'Sá sem ekur af bílastæði inn á veg á forgang samkvæmt hægri reglunni.',
+ e:'Þegar ekið er inn á veg af stæði, lóð, bensínstöð eða vegöxl gildir hvorki hægri reglan né annar forgangur — þú veitir allri umferð forgang, þar með talið gangandi og hjólandi á gangstétt eða stíg sem þú þverar.'},
+{c:'forgangur', q:'Tveggja akreina hringtorg: hvor akreinin á forgang þegar ekið er út úr torginu?',
+ o:['Innri akreinin — sá sem er á ytri akrein víkur fyrir þeim sem fer út af innri','Ytri akreinin á alltaf forganginn','Sá sem flautar fyrr','Báðar jafnar, sá fyrri fer'], a:0,
+ t:'Í tveggja akreina hringtorgi skal ökumaður á ytri akrein veita þeim sem ekur út úr torginu af innri akrein forgang.',
+ f:'Í tveggja akreina hringtorgi á ytri akreinin forgang fram yfir innri akreinina.',
+ e:'Þetta er séríslensk regla: í tveggja akreina hringtorgi hefur umferð á innri akrein forgang þegar ekið er út úr torginu. Á ytri akrein átt þú því að gæta að bílum á innri hring sem eru á leið út.'},
+{c:'forgangur', q:'Strætisvagn gefur stefnuljós og ætlar af stað frá biðstöð í þéttbýli. Hvað gerir þú?',
+ o:['Hægi á eða stöðva og auðvelda vagninum að komast af stað','Flýti mér fram úr áður en hann fer af stað','Flauta til að láta vita af mér','Á alltaf forgang því ég er á aðalakrein'], a:0,
+ t:'Í þéttbýli ber ökumönnum að auðvelda strætisvagni að aka af stað frá biðstöð.',
+ f:'Strætisvagn á biðstöð skal alltaf bíða þar til gatan er alveg auð.',
+ e:'Þar sem leyfður hámarkshraði er 60 km/klst eða lægri skal draga úr hraða og eftir atvikum stöðva svo strætisvagn komist af stað frá merktri biðstöð.'},
+{c:'forgangur', q:'Neyðarbíll nálgast með blikkandi bláum ljósum og sírenu. Hvað gerir þú?',
+ o:['Víki tafarlaust til hliðar og stöðva ef þarf svo hann komist greiðlega leiðar sinnar','Held óbreyttum hraða og stefnu','Stöðva strax á miðjum veginum','Eyk hraðann til að vera ekki fyrir'], a:0,
+ t:'Þegar neyðarbíll gefur hljóð- og ljósmerki ber öllum að víkja greiðlega úr vegi, t.d. með því að aka út í kant og stöðva.',
+ f:'Neyðarbíll með sírenu á aðeins forgang á gatnamótum með umferðarljósum.',
+ e:'Lögreglu-, slökkvi- og sjúkrabílar með sírenu og blá ljós eiga forgang alls staðar. Sýndu fyrirsjáanleg viðbrögð: gefðu stefnuljós, víktu út í kant og stöðvaðu ef með þarf — en aldrei snögghemla í blindni.'},
+{c:'forgangur', q:'Þú nálgast gatnamót með biðskyldu. Hjólreiðamaður kemur eftir þvergötunni. Hvað gildir?',
+ o:['Ég veiti honum forgang eins og annarri umferð á þvergötunni','Biðskylda gildir aðeins gagnvart bílum','Hjólreiðamenn víkja alltaf fyrir bílum','Ég á forgang því hjól eru ekki ökutæki'], a:0,
+ t:'Biðskylda gildir gagnvart allri umferð á veginum sem ekið er inn á, líka reiðhjólum.',
+ f:'Biðskylda gildir eingöngu gagnvart vélknúnum ökutækjum.',
+ e:'Reiðhjól er ökutæki samkvæmt umferðarlögum. Biðskyldan nær til allrar umferðar á veginum sem þú ekur inn á — bíla, mótorhjóla og reiðhjóla jafnt.'},
+{c:'forgangur', q:'Tveir bílar mætast í brattri, mjórri brekku þar sem annar þarf að bakka. Hvor víkur að jafnaði?',
+ o:['Sá sem ekur niður brekkuna bakkar upp aftur','Sá sem ekur upp brekkuna bakkar niður','Stærri bíllinn víkur alltaf','Sá sem kom seinna að víkur'], a:0,
+ t:'Þar sem erfitt er að mætast í brekku skal sá sem ekur niður í móti að jafnaði víkja.',
+ f:'Þar sem erfitt er að mætast í brekku skal sá sem ekur upp í móti alltaf bakka niður brekkuna.',
+ e:'Að bakka niður brekku er mun hættulegra en að bakka upp. Því víkur sá sem ekur niður, nema augljóslega standi betur á fyrir hinum að víkja (t.d. útskot rétt hjá).'},
+{c:'forgangur', q:'Á hvaða gatnamótum gildir hægri reglan?',
+ o:['Þar sem forgangur er ekki ákveðinn með umferðarmerkjum eða ljósum','Á öllum gatnamótum í þéttbýli','Aðeins þar sem malarvegir mætast','Alls staðar nema í hringtorgum'], a:0,
+ t:'Hægri reglan gildir aðeins þar sem forgangur er ekki ákveðinn með merkjum, ljósum eða öðrum reglum.',
+ f:'Hægri reglan gengur framar biðskyldumerkjum ef hvort tveggja á við.',
+ e:'Umferðarljós, stöðvunarskylda, biðskylda og aðalbrautarmerki ganga öll framar hægri reglunni. Hún er „varareglan“ sem gildir á ómerktum gatnamótum.'},
+{c:'forgangur', q:'Þú ekur á aðalbraut í gegnum gatnamót. Þarftu samt að sýna aðgát?',
+ o:['Já — forgangur leysir mig aldrei undan aðgæsluskyldu','Nei, á aðalbraut ber ég enga ábyrgð','Aðeins ef lögregla er nærri','Aðeins í myrkri'], a:0,
+ t:'Forgangur á aðalbraut leysir ökumann ekki undan almennri aðgæslu- og varúðarskyldu.',
+ f:'Á aðalbraut má treysta því í blindni að allir aðrir víki.',
+ e:'Grundvallarregla umferðarlaga er að sýna aðgát og tillitssemi í hvívetna. Þótt þú eigir forganginn átt þú samt að fylgjast með og vera viðbúinn mistökum annarra.'},
+
+/* ---------- HRAÐI OG STÖÐVUNARVEGALENGD ---------- */
+{c:'hradi', q:'Hver er almennur hámarkshraði í þéttbýli, nema annað sé gefið til kynna?',
+ o:['50 km/klst','30 km/klst','60 km/klst','70 km/klst'], a:0,
+ t:'Almennur hámarkshraði í þéttbýli er 50 km/klst nema merki segi annað.',
+ f:'Almennur hámarkshraði í þéttbýli er 60 km/klst nema merki segi annað.',
+ e:'Í þéttbýli er hámarkshraðinn 50 km/klst nema merki sýni annað — algeng frávik eru 30 km/klst í íbúðahverfum og 60–80 km/klst á stofnbrautum.'},
+{c:'hradi', q:'Hver er almennur hámarkshraði á vegum með bundnu slitlagi utan þéttbýlis?',
+ o:['90 km/klst','80 km/klst','100 km/klst','110 km/klst'], a:0,
+ t:'Á vegum með bundnu slitlagi utan þéttbýlis er hámarkshraðinn 90 km/klst.',
+ f:'Á vegum með bundnu slitlagi utan þéttbýlis er hámarkshraðinn 100 km/klst.',
+ e:'Utan þéttbýlis gildir 90 km/klst á bundnu slitlagi en 80 km/klst á malarvegum. Merki geta þó kveðið á um lægri hraða, t.d. við hættulegar beygjur.'},
+{c:'hradi', q:'Hver er almennur hámarkshraði á malarvegum?',
+ o:['80 km/klst','90 km/klst','70 km/klst','60 km/klst'], a:0,
+ t:'Á malarvegum er almennur hámarkshraði 80 km/klst.',
+ f:'Á malarvegum gildir sami hámarkshraði og á bundnu slitlagi, 90 km/klst.',
+ e:'Malarvegir hafa lakara veggrip og laust yfirborð og því er hámarkshraðinn 80 km/klst. Oft er öruggast að aka talsvert hægar, sérstaklega í beygjum og þegar mætt er bíl.'},
+{c:'hradi', q:'Úr hverju samanstendur stöðvunarvegalengd?',
+ o:['Viðbragðsvegalengd + hemlunarvegalengd','Aðeins hemlunarvegalengd','Hraða margfölduðum með þyngd','Lengd bílsins + hemlunarvegalengd'], a:0,
+ t:'Stöðvunarvegalengd er samanlögð viðbragðsvegalengd og hemlunarvegalengd.',
+ f:'Stöðvunarvegalengd er það sama og hemlunarvegalengd.',
+ e:'Frá því að hætta birtist þar til bíllinn stöðvast líður fyrst viðbragðstíminn (bíllinn heldur fullum hraða!) og síðan hemlunin sjálf. Samtalan er stöðvunarvegalengdin.'},
+{c:'hradi', q:'Hvað gerist við hemlunarvegalengdina ef hraðinn tvöfaldast?',
+ o:['Hún um það bil fjórfaldast','Hún tvöfaldast','Hún helst óbreytt með góðum hemlum','Hún þrefaldast'], a:0,
+ t:'Ef hraðinn tvöfaldast fjórfaldast hemlunarvegalengdin um það bil.',
+ f:'Ef hraðinn tvöfaldast tvöfaldast hemlunarvegalengdin líka.',
+ e:'Hemlunarvegalengd vex með hraðanum í öðru veldi: tvöfaldur hraði = fjórföld vegalengd, þrefaldur hraði = nífôld. Þess vegna skiptir jafnvel lítil hraðalækkun miklu máli fyrir öryggið.'},
+{c:'hradi', q:'Hve langt fer bíll á 90 km/klst á einni sekúndu?',
+ o:['Um 25 metra','Um 10 metra','Um 50 metra','Um 90 metra'], a:0,
+ t:'Bíll á 90 km/klst fer um 25 metra á hverri sekúndu.',
+ f:'Bíll á 90 km/klst fer um 10 metra á hverri sekúndu.',
+ e:'90 km/klst eru 90.000 m á 3.600 sekúndum = 25 m/sek. Á einni sekúndu viðbragðstíma ferðast bíllinn því 25 metra án þess að nokkuð sé hemlað.'},
+{c:'hradi', q:'Hver er dæmigerður viðbragðstími ökumanns?',
+ o:['Um 1 sekúnda','Um 0,1 sekúnda','Um 5 sekúndur','Enginn ef ökumaður er vakandi'], a:0,
+ t:'Viðbragðstími ökumanns er að jafnaði um ein sekúnda.',
+ f:'Viðbragðstími ökumanns er svo stuttur að hann hefur engin áhrif á stöðvunarvegalengd.',
+ e:'Frá því að augað sér hættu og þar til fóturinn er kominn á hemilinn líður um 1 sekúnda hjá óþreyttum ökumanni — lengur hjá þreyttum eða annars hugar. Allan þann tíma heldur bíllinn fullum hraða.'},
+{c:'hradi', q:'Hvenær ber að aka hægar en leyfður hámarkshraði segir til um?',
+ o:['Þegar aðstæður krefjast, t.d. í hálku, þoku, myrkri eða þungri umferð','Aldrei — hámarkshraðinn er alltaf öruggur','Aðeins ef lögregla er sýnileg','Aðeins ef farþegar biðja um það'], a:0,
+ t:'Hámarkshraði er efri mörk — ökumaður skal alltaf miða hraðann við aðstæður hverju sinni.',
+ f:'Ef ekið er á leyfðum hámarkshraða er hraðinn alltaf löglegur og öruggur, óháð aðstæðum.',
+ e:'Hraðinn skal aldrei vera meiri en svo að ökumaður hafi fullt vald á bílnum og geti stöðvað á þeim hluta vegar sem hann sér yfir. Hálka, bleyta, þoka, myrkur og umferð kalla öll á lægri hraða en skiltið leyfir.'},
+{c:'hradi', q:'Hvaða bil á að jafnaði að halda í næsta bíl á undan við góðar aðstæður?',
+ o:['A.m.k. 2 sekúndur','Hálfa sekúndu','Eina bíllengd óháð hraða','5 metra á öllum hraða'], a:0,
+ t:'Gott viðmið við góðar aðstæður er að hafa minnst tveggja sekúndna bil í næsta bíl á undan.',
+ f:'Eins bíllengdar bil er alltaf nóg, óháð hraða.',
+ e:'Tveggja sekúndna reglan: veldu kennileiti sem bíllinn á undan fer fram hjá og teldu — komir þú að því innan tveggja sekúndna er bilið of stutt. Í hálku eða bleytu þarf mun lengra bil.'},
+{c:'hradi', q:'Af hverju er of hægur akstur miðað við umferð líka varasamur?',
+ o:['Hann truflar umferðarflæði og ýtir undir hættulegan framúrakstur annarra','Hann er alltaf öruggasti kosturinn','Hann sparar eldsneyti og er því alltaf æskilegur','Hann er bannaður alls staðar'], a:0,
+ t:'Óþarflega hægur akstur getur truflað umferð og skapað hættu með því að ýta undir framúrakstur.',
+ f:'Því hægar sem ekið er, því öruggari er umferðin alltaf.',
+ e:'Ökumaður má ekki aka óþarflega hægt eða hemla snögglega að ástæðulausu þannig að það trufli aðra umferð. Mikill hraðamunur milli bíla er sjálfstæður áhættuþáttur.'},
+
+/* ---------- STÖÐVUN OG LAGNING ---------- */
+{c:'stodvun', img:'stodvunbann', q:'Hvað merkir þetta merki?',
+ o:['Bann við stöðvun — hér má hvorki stöðva né leggja','Bann við lagningu en stutt stöðvun leyfð','Bílastæði fyrir fatlaða','Stöðvunarskylda framundan'], a:0,
+ t:'Merki með tveimur rauðum krossstrikum bannar bæði stöðvun og lagningu ökutækis.',
+ f:'Þar sem stöðvun er bönnuð má samt stoppa stutt til að hleypa farþega út.',
+ e:'Bann við stöðvun þýðir að ekki má nema staðar yfirhöfuð, ekki einu sinni andartak til að hleypa farþega út. Merkið með einu skástriki bannar hins vegar aðeins lagningu.'},
+{c:'stodvun', img:'lagningbann', q:'Hvað merkir þetta merki?',
+ o:['Bann við lagningu — stutt stöðvun er þó leyfð, t.d. til að hleypa farþega út','Bann við allri stöðvun','Bílastæði framundan','Einstefna til vinstri'], a:0,
+ t:'Merki með einu rauðu skástriki bannar lagningu en leyfir stutta stöðvun, t.d. til að hleypa farþega út.',
+ f:'Merki með einu rauðu skástriki bannar bæði stöðvun og lagningu.',
+ e:'Við lagningarbann má stöðva stutt til að hleypa farþegum inn eða út eða ferma og afferma — en ekki skilja bílinn eftir eða bíða í honum lengur en þarf.'},
+{c:'stodvun', q:'Hve nálægt gatnamótum má leggja bíl?',
+ o:['Ekki nær en 5 metra frá næsta horni gatnamóta','Ekki nær en 2 metra','Alveg upp að horninu ef gatan er breið','10 metra í þéttbýli, annars frjálst'], a:0,
+ t:'Bannað er að leggja ökutæki nær gatnamótum en 5 metra.',
+ f:'Leggja má bíl alveg upp við horn gatnamóta ef hann truflar ekki umferð.',
+ e:'Bíll sem stendur nær gatnamótum en 5 metra byrgir sýn og torveldar beygjur. Sama 5 metra regla gildir framan við gangbraut — svo gangandi vegfarendur og ökumenn sjái hvorir aðra.'},
+{c:'stodvun', q:'Má stöðva eða leggja bíl á gangbraut eða innan 5 m fyrir framan hana?',
+ o:['Nei, hvorugt er leyfilegt','Já, ef stoppað er skemur en 5 mínútur','Já, utan annatíma','Aðeins ef neyðarljós eru höfð á'], a:0,
+ t:'Bannað er að stöðva eða leggja bíl á gangbraut og innan 5 metra fyrir framan hana.',
+ f:'Leyfilegt er að leggja rétt framan við gangbraut ef bíllinn skagar ekki út á hana.',
+ e:'Bíll sem stendur við gangbraut byrgir sýn milli gangandi vegfarenda og ökumanna — barn sem stígur út fyrir hann sést ekki fyrr en of seint. Því er bannað að stöðva á gangbraut og innan 5 m fyrir framan hana.'},
+{c:'stodvun', q:'Hvar er bannað að leggja, af eftirtöldu?',
+ o:['Á blindhæð, í beygju með skerta yfirsýn og á brú','Á merktu bílastæði','Hægra megin á einstefnugötu','Í stæði með stöðumæli'], a:0,
+ t:'Bannað er að stöðva eða leggja bíl þar sem hann sést illa, svo sem á blindhæð eða í beygju.',
+ f:'Leggja má bíl á blindhæð ef neyðarljósin eru höfð kveikt.',
+ e:'Þar sem vegfarendur sjá stutt fram á veginn — blindhæðir, beygjur, brýr og göng — er kyrrstæður bíll stórhættulegur því umferð á fullri ferð kemur að honum fyrirvaralaust.'},
+{c:'stodvun', q:'Hve nálægt merktri biðstöð strætisvagna má leggja?',
+ o:['Ekki nær en 15 metra frá merkinu, nema annað sé merkt','Ekki nær en 3 metra','Hvar sem er ef vagninn kemst hjá','Bannið gildir aðeins á virkum dögum'], a:0,
+ t:'Að jafnaði má ekki leggja nær merktri biðstöð almenningsvagna en 15 metra.',
+ f:'Leggja má alveg upp við biðstöðvarmerki strætisvagna ef enginn vagn er á leiðinni.',
+ e:'Strætisvagn þarf rými til að komast að og frá biðstöðinni og farþegar þurfa að sjá og sjást. Því gildir 15 metra reglan við biðstöðvar nema merkingar segi annað.'},
+{c:'stodvun', q:'Hvernig á að skilja við bílinn í brattri brekku?',
+ o:['Með handbremsu á, í gír (eða P) og hjólin skástillt upp í kant','Í hlutlausum gír svo hann kastist ekki í gang','Aðeins með fótbremsu í botni','Með vélina í gangi'], a:0,
+ t:'Í brekku á að setja handbremsuna á, hafa bílinn í gír eða P-stöðu og beina framhjólunum að vegkanti.',
+ f:'Í brekku nægir að skilja bílinn eftir í hlutlausum gír með handbremsuna lausa.',
+ e:'Þrefalda öryggið: handbremsa, gír (P á sjálfskiptum) og hjól upp að kanti — þá stöðvast bíllinn á kantinum ef bremsan gefur sig í stað þess að renna út á götu.'},
+{c:'stodvun', q:'Má leggja bíl á gangstétt?',
+ o:['Nei, ekki nema merki eða merkingar leyfi það sérstaklega','Já, ef tvö hjól eru uppi á stéttinni','Já, í stuttan tíma','Já, alls staðar í íbúðahverfum'], a:0,
+ t:'Óheimilt er að leggja á gangstétt eða göngustíg nema það sé sérstaklega leyft með merkingum.',
+ f:'Alltaf má leggja bíl með tvö hjól uppi á gangstétt ef gatan er þröng.',
+ e:'Gangstéttin er svæði gangandi vegfarenda. Bíll á stéttinni neyðir fótgangandi — þar á meðal barnavagna og hjólastóla — út á akbrautina.'},
+{c:'stodvun', q:'Hvorum megin götu á að jafnaði að stöðva eða leggja bíl?',
+ o:['Hægra megin miðað við akstursstefnu (á einstefnugötu má þó nota vinstri brún)','Vinstra megin, nær bílstjóranum','Hvorum megin sem er á öllum götum','Alltaf þeim megin sem hús standa'], a:0,
+ t:'Að jafnaði skal stöðva og leggja bíl hægra megin vegar; á einstefnugötu má einnig leggja vinstra megin.',
+ f:'Á götu með umferð í báðar áttir má leggja hvorum megin sem er, líka á móti akstursstefnu.',
+ e:'Lagt er hægra megin svo bíllinn snúi rétt miðað við umferðina og útsýn ökumanns sé rétt þegar ekið er af stað. Á einstefnugötum er báðum brúnum ekið í sömu átt og því má nota þær báðar.'},
+{c:'stodvun', q:'Bíllinn bilar á fjölförnum vegi og verður ekki færður strax. Hvað gerir þú?',
+ o:['Kveiki neyðarljósin og set upp viðvörunarþríhyrning í hæfilegri fjarlægð fyrir aftan bílinn','Skil hann bara eftir og sæki hann seinna','Set ljósin á fjarljós svo hann sjáist','Ekkert — aðrir eiga að passa sig'], a:0,
+ t:'Standi bilaður bíll þar sem hætta stafar af skal kveikja neyðarljós og setja upp viðvörunarþríhyrning fyrir aftan hann.',
+ f:'Viðvörunarþríhyrning á að stilla upp alveg við afturstuðara bílsins.',
+ e:'Þríhyrningurinn á að standa það langt fyrir aftan bílinn að aðvífandi umferð fái tíma til að bregðast við — utan þéttbýlis gjarnan 100 m eða meira, sérstaklega ef hæð eða beygja skyggir á.'},
+
+/* ---------- ÓVARÐIR VEGFARENDUR ---------- */
+{c:'gangandi', q:'Þú nálgast gangbraut þar sem fótgangandi bíður á gangstéttinni. Hvað gerir þú?',
+ o:['Hægi á og stöðva til að hleypa honum yfir','Held áfram — hann er ekki lagður af stað','Flauta svo hann flýti sér yfir','Eyk hraðann til að vera farinn hjá'], a:0,
+ t:'Ökumaður skal veita gangandi vegfaranda forgang við gangbraut og stöðva ef þarf.',
+ f:'Ökumaður þarf aðeins að stöðva við gangbraut ef gangandi vegfarandi er þegar kominn út á akbrautina.',
+ e:'Við ómerkta jafnt sem merkta gangbraut ber að aka nógu hægt til að geta hleypt gangandi vegfarendum yfir. Sá sem bíður við brautina á rétt á að komast yfir án þess að þurfa að hætta sér út fyrst.'},
+{c:'gangandi', q:'Bíll á næstu akrein hefur stöðvað við gangbraut. Hvað ber þér að gera?',
+ o:['Stöðva líka — aldrei aka fram úr bíl sem hefur numið staðar við gangbraut','Aka rólega fram úr honum','Flauta og halda áfram','Skipta um akrein og halda hraða'], a:0,
+ t:'Bannað er að aka fram úr ökutæki sem hefur stöðvað við gangbraut til að hleypa gangandi yfir.',
+ f:'Aka má hægt fram hjá bíl sem stöðvað hefur við gangbraut ef enginn sést á brautinni sjálfri.',
+ e:'Bíllinn sem stendur kyrr skyggir á gangbrautina — fótgangandi getur birst fyrir framan hann hvenær sem er. Framúrakstur við gangbraut er ein hættulegasta hegðun í þéttbýli og stranglega bannaður.'},
+{c:'gangandi', q:'Af hverju þarf sérstaka aðgát gagnvart börnum í umferðinni?',
+ o:['Þau eru lítil, óútreiknanleg og meta hraða og fjarlægð illa','Þau eru fljótari yfir götuna en fullorðnir','Þarf ekki — börn læra umferðarreglur í skóla','Þau sjást betur en fullorðnir'], a:0,
+ t:'Börn eiga erfitt með að meta hraða og fjarlægð ökutækja og geta hlaupið fyrirvaralaust út á veg.',
+ f:'Börn í umferðinni hegða sér að jafnaði eins og fullorðnir vegfarendur.',
+ e:'Börn eru lágvaxin (sjást illa milli bíla), eiga erfitt með að staðsetja hljóð, meta hraða ranglega og gleyma sér í leik. Sjáir þú barn eða bolta nálægt götu skaltu hægja á þér strax.'},
+{c:'gangandi', q:'Þú ætlar að beygja á gatnamótum og þverar gangbraut. Gangandi vegfarandi er á leið yfir hana. Hver á réttinn?',
+ o:['Gangandi vegfarandinn — ég hleypi honum yfir áður en ég klára beygjuna','Ég, því ég er á akbrautinni','Sá sem er fljótari','Bíllinn á alltaf réttinn í beygju'], a:0,
+ t:'Ökumaður sem beygir á gatnamótum skal veita gangandi vegfarendum sem fara yfir akbrautina forgang.',
+ f:'Í beygju á gatnamótum eiga gangandi vegfarendur að víkja fyrir bílum.',
+ e:'Í beygjum gleymist oft að líta eftir fótgangandi. Reglan er skýr: sá sem beygir hleypir gangandi og hjólandi vegfarendum sem þvera götuna yfir fyrst.'},
+{c:'gangandi', q:'Hvernig ferð þú fram úr hjólreiðamanni á vegi?',
+ o:['Hægi á, gef gott hliðarbil (a.m.k. 1,5 m) og fer ekki fram úr fyrr en það er öruggt','Fer eins nálægt og hægt er til að trufla ekki umferð á móti','Flauta fast svo hann víki út af','Fram úr hjólreiðamönnum má aka hvar og hvernig sem er'], a:0,
+ t:'Við framúrakstur fram hjá hjólreiðamanni skal hafa ríflegt hliðarbil, að minnsta kosti um 1,5 metra.',
+ f:'Við framúrakstur fram hjá hjólreiðamanni nægir hálfs metra hliðarbil.',
+ e:'Hjólreiðamaður getur sveigt fyrirvaralaust vegna holu, vinds eða hálku. Gefðu að minnsta kosti 1,5 m bil, lækkaðu hraðann og bíddu ef aðstæður leyfa ekki öruggan framúrakstur.'},
+{c:'gangandi', q:'Í myrkri og slæmu skyggni utan þéttbýlis — hvar máttu eiga von á gangandi vegfaranda?',
+ o:['Á eða við akbrautina, jafnvel án endurskinsmerkja','Aðeins á upplýstum gangbrautum','Hvergi — gangandi umferð er bönnuð utan þéttbýlis','Aðeins vinstra megin vegar'], a:0,
+ t:'Utan þéttbýlis getur gangandi vegfarandi verið á akbrautinni sjálfri, sérstaklega þar sem engin gangstétt er.',
+ f:'Utan þéttbýlis er alltaf bannað að ganga eftir akbrautinni.',
+ e:'Þar sem hvorki er gangstétt né stígur gengur fólk á vegöxl eða akbraut — helst á móti umferð. Ökumaður án endurskins sér fótgangandi oft ekki fyrr en í 20–30 m fjarlægð í lágljósum. Stilltu hraðann eftir því.'},
+{c:'gangandi', q:'Skólabíll hefur stöðvað og börn eru að fara úr honum. Hvað gerir þú?',
+ o:['Dreg verulega úr hraða og er viðbúinn að stöðva — börn geta hlaupið fram fyrir eða aftan bílinn','Ek fram úr á óbreyttum hraða','Flauta til öryggis og held áfram','Ekkert sérstakt ef ég er á forgangsvegi'], a:0,
+ t:'Þegar ekið er fram hjá kyrrstæðum skólabíl skal sýna sérstaka aðgát og vera viðbúinn að stöðva.',
+ f:'Skólabíll sem hefur numið staðar hefur engin áhrif á aksturshegðun annarra.',
+ e:'Börn hugsa fyrst um að komast heim — ekki um umferðina. Þau geta birst fyrirvaralaust fram undan eða aftan bílnum. Hægðu vel á þér, jafnvel niður fyrir 30 km/klst, og hafðu fótinn tilbúinn á hemli.'},
+{c:'gangandi', q:'Hvað gildir um akstur fram hjá hesti með knapa á vegi?',
+ o:['Hægja vel á, gefa gott bil og forðast hávaða — hestar geta fælst','Flauta til að hesturinn víki','Aka eins hratt fram hjá og hægt er','Hestar mega ekki vera á vegum'], a:0,
+ t:'Þegar ekið er fram hjá hestum skal hægja á, gefa rúmt bil og forðast snöggan hávaða.',
+ f:'Rétt er að flauta þegar ekið er fram hjá hestum svo þeir víki af veginum.',
+ e:'Hestur er lifandi vera sem getur fælst við vélarhljóð, flaut eða snögga hreyfingu — og kastað knapanum út á veginn. Aktu fram hjá á lágum hraða, með góðu bili og án hávaða.'},
+{c:'gangandi', q:'Hvað þarf sérstaklega að varast áður en beygt er til hægri yfir hjólarein eða stíg?',
+ o:['Hjólandi umferð sem kemur aftan að hægra megin og fer beint áfram','Að gefa ekki stefnuljós of snemma','Umferð langt fyrir aftan á sömu akrein','Ekkert — hjólandi eiga að víkja'], a:0,
+ t:'Áður en beygt er til hægri skal gæta sérstaklega að hjólandi umferð sem kemur hægra megin og á leið beint áfram.',
+ f:'Hjólreiðamaður á hjólarein á að stöðva fyrir bíl sem beygir til hægri yfir reinina.',
+ e:'„Hægri-beygju slysin“ verða þegar bíll beygir yfir hjólarein í veg fyrir hjól sem fer beint áfram. Líttu í hægri spegil OG yfir öxlina áður en þú beygir — hjólið á réttinn.'},
+{c:'gangandi', q:'Rafhlaupahjól og reiðhjól í umferðinni — hvað á við?',
+ o:['Þau geta verið hraðskreið og sjást illa — gerðu ráð fyrir þeim við gatnamót og gangbrautir','Þau mega hvergi fara yfir götur','Þau víkja alltaf fyrir bílum','Þau eru aðeins leyfð á sumrin'], a:0,
+ t:'Rafhlaupahjól geta nálgast gatnamót hratt af stígum og ökumenn þurfa að gera ráð fyrir þeim.',
+ f:'Rafhlaupahjól mega samkvæmt reglum aldrei fara yfir gangbrautir.',
+ e:'Smáfarartæki á 20–25 km/klst birtast mun hraðar við gangbraut en fótgangandi. Skannaðu stíga í báðar áttir áður en þú þverar þá — sérstaklega í beygjum og við útafkeyrslur.'},
+
+/* ---------- LJÓS OG MERKJAGJÖF ---------- */
+{c:'ljos', q:'Hvenær eiga ökuljós (lágljós) að vera kveikt á Íslandi?',
+ o:['Alltaf þegar bíllinn er á ferð, allan sólarhringinn allt árið','Aðeins í myrkri','Aðeins frá september til maí','Aðeins utan þéttbýlis'], a:0,
+ t:'Á Íslandi er skylt að aka með kveikt ökuljós allan sólarhringinn, allt árið.',
+ f:'Á Íslandi þarf aðeins að kveikja ökuljós í myrkri og slæmu skyggni.',
+ e:'Ljósaskylda gildir allan sólarhringinn á Íslandi. Athugaðu að ljósabúnaður sem kviknar sjálfkrafa að framan skilur afturljósin stundum eftir slökkt — gættu þess að öll ljós logi.'},
+{c:'ljos', q:'Bíll kemur á móti þér í myrkri og þú ert með háljósin (fjarljós) á. Hvað gerir þú?',
+ o:['Skipti yfir á lágljós tímanlega svo ég blindi ekki ökumanninn','Held háljósunum til að sjá betur','Blikka háljósunum ört','Slekk öll ljós andartak'], a:0,
+ t:'Skipta skal af háljósum yfir á lágljós tímanlega þegar mætt er annarri umferð.',
+ f:'Halda má háljósum þegar bíll mætir manni ef vegurinn er breiður.',
+ e:'Háljós blinda ökumann sem kemur á móti og hann sér þá hvorki veg né vegfarendur. Skiptu niður áður en ljósin skella á honum og aftur upp þegar bíllinn er kominn fram hjá.'},
+{c:'ljos', q:'Þú ekur aftan að öðrum bíl í myrkri. Hvaða ljós notarðu?',
+ o:['Lágljós — háljós í baksýnisspegil blindar ökumanninn á undan','Háljós svo hann sjái mig','Þokuljós','Stöðuljós eingöngu'], a:0,
+ t:'Þegar ekið er skammt aftan við annan bíl í myrkri skal nota lágljós.',
+ f:'Þegar ekið er aftan við annan bíl í myrkri er rétt að nota háljós til að lýsa lengra fram.',
+ e:'Háljósin þín endurkastast í speglum bílsins á undan og blinda ökumanninn. Notaðu lágljós þegar þú fylgir öðrum bíl og skiptu ekki upp fyrr en gott bil er á milli.'},
+{c:'ljos', q:'Hvenær á að nota þokuljós?',
+ o:['Aðeins í þoku, þéttri úrkomu eða skafrenningi þegar skyggni er verulega skert','Alltaf í myrkri til viðbótar við lágljós','Í öllum akstri utan þéttbýlis','Til skrauts með LED-ljósum'], a:0,
+ t:'Þokuljós á aðeins að nota þegar skyggni er verulega skert, t.d. í þoku eða skafrenningi.',
+ f:'Þokuljós má nota að staðaldri með lágljósum til að sjá betur.',
+ e:'Þokuljós eru stillt lágt og breitt og eiga við í þoku, hríð og skafrenningi. Í venjulegu skyggni blinda þau og trufla aðra — notkun þeirra þá er óheimil.'},
+{c:'ljos', q:'Hvenær gefur þú stefnuljós?',
+ o:['Tímanlega fyrir hverja beygju, akreinaskipti, framúrakstur og þegar ekið er af stað frá kanti','Aðeins þegar aðrir bílar eru nálægt','Aðeins á gatnamótum með umferðarljósum','Stefnuljós eru valfrjáls í þéttbýli'], a:0,
+ t:'Gefa skal stefnuljós tímanlega við beygjur, akreinaskipti og þegar ekið er frá vegarbrún.',
+ f:'Stefnuljós þarf aðeins að gefa ef annar bíll sést í nánd.',
+ e:'Stefnuljósið er eina leiðin til að segja öðrum hvað þú ætlar að gera — líka gangandi og hjólandi sem þú sérð kannski ekki. Gefðu það alltaf og tímanlega, en samt ekki svo snemma að það villi um fyrir öðrum.'},
+{c:'ljos', q:'Hvað merkir það þegar ökumaður notar hljóðmerki (flautu)?',
+ o:['Viðvörun um yfirvofandi hættu — flautan er ekki til að skamma aðra','Kveðja til kunningja','Krafa um að aðrir víki','Merki um að hann ætli að leggja'], a:0,
+ t:'Hljóðmerki á aðeins að nota til að vara aðra vegfarendur við yfirvofandi hættu.',
+ f:'Flautuna má nota til að lýsa óánægju með akstur annarra.',
+ e:'Flautan er öryggistæki, ekki tjáningartæki. Notaðu hana aðeins þegar þarf að afstýra hættu — óþarfa flaut hræðir og truflar og getur beinlínis valdið slysum.'},
+{c:'ljos', q:'Hvenær notarðu neyðarljósin (hazard/viðvörunarblikk)?',
+ o:['Þegar bíllinn skapar hættu eða óvænta truflun, t.d. bilaður á akbraut eða síðastur í óvæntri biðröð','Þegar ég legg ólöglega „rétt á meðan“','Í hvert sinn sem rignir','Þegar ég bakka'], a:0,
+ t:'Neyðarljós eru notuð þegar ökutækið skapar hættu fyrir aðra umferð, t.d. vegna bilunar á akbraut.',
+ f:'Neyðarljós heimila stöðvun hvar sem er, t.d. á gangbraut á meðan skroppið er í búð.',
+ e:'Neyðarljósin vara aðra við óvæntri hindrun — bilun, umferðaróhappi eða snöggri stöðvun umferðar framundan (t.d. á hraðbraut). Þau veita engan rétt til að leggja þar sem bann gildir.'},
+{c:'ljos', q:'Gult blikkandi ljós logar á gatnamótum í stað venjulegra umferðarljósa. Hvað þýðir það?',
+ o:['Umferðarljósin eru ekki virk — almennar forgangsreglur og merki gilda, sýnið sérstaka aðgát','Öll umferð skal stöðva','Frjáls för fyrir alla','Aðeins strætisvagnar mega aka yfir'], a:0,
+ t:'Gult blikkandi ljós þýðir að umferðarljósin stýra ekki umferðinni og almennar forgangsreglur gilda.',
+ f:'Gult blikkandi ljós á gatnamótum jafngildir grænu ljósi og veitir forgang.',
+ e:'Blikkandi gult þýðir „ljósin eru úr leik“. Þá gilda biðskyldu-/stöðvunarmerki séu þau til staðar, annars hægri reglan — og alltaf aukin aðgát.'},
+{c:'ljos', q:'Gult ljós logar á eftir grænu á umferðarljósum. Hvað ber að gera?',
+ o:['Stöðva, nema ég sé svo nálægt að stöðvun valdi hættu','Auka hraðann til að sleppa yfir','Gult þýðir það sama og grænt','Flauta og halda áfram'], a:0,
+ t:'Við gult ljós skal stöðva nema ökutækið sé komið svo nálægt að ekki verði stöðvað án hættu.',
+ f:'Gult ljós er merki um að flýta sér yfir gatnamótin áður en rautt kviknar.',
+ e:'Gult þýðir stopp — undantekningin er aðeins ef þú ert það nálægt á löglegum hraða að snörp hemlun skapaði hættu (t.d. aftanákeyrslu). Að „taka gula ljósið“ með því að gefa í er brot.'},
+{c:'ljos', q:'Bíllinn á undan þér gefur stefnuljós til vinstri á aðalbraut, hægir á sér og færir sig að miðju. Hvað gerir hann líklega — og hvað gerir þú?',
+ o:['Hann ætlar að beygja til vinstri — ég hægi á mér og fer EKKI fram úr vinstra megin','Hann ætlar að stoppa — ég fer strax fram úr vinstra megin','Hann hefur gleymt stefnuljósinu — ég held óbreyttum hraða','Hann er að hleypa mér fram úr vinstra megin'], a:0,
+ t:'Bannað er að aka fram úr vinstra megin við ökutæki sem hefur gefið merki um vinstri beygju.',
+ f:'Þegar bíllinn á undan gefur stefnuljós til vinstri er rétt að flýta sér fram úr honum vinstra megin.',
+ e:'Að fara vinstra megin fram úr bíl sem er að beygja til vinstri er ávísun á harðan árekstur. Hægðu á þér og farðu hægra megin fram hjá ef aðstæður leyfa — annars bíddu.'},
+
+/* ---------- ÁSTAND ÖKUTÆKIS OG ÖRYGGISBÚNAÐUR ---------- */
+{c:'okutaeki', q:'Hver ber ábyrgð á að bíllinn sé í lögmæltu ástandi í akstri?',
+ o:['Ökumaðurinn (og eigandi/umráðamaður)','Aðeins skoðunarstöðin','Tryggingafélagið','Sá sem ók bílnum síðast'], a:0,
+ t:'Ökumaður ber ábyrgð á að ökutækið sé í lögmæltu ástandi þegar hann ekur því.',
+ f:'Standist bíll skoðun ber ökumaður enga ábyrgð á ástandi hans það árið.',
+ e:'Skoðun er aðeins stikkprufa á tilteknum degi. Ökumaðurinn ber ábyrgð á ástandinu í hverri ferð — dekkjum, ljósum, hemlum, rúðum og öðrum öryggisbúnaði.'},
+{c:'okutaeki', q:'Hver er lágmarksmynstursdýpt hjólbarða fólksbíls að sumri til?',
+ o:['1,6 mm','0,5 mm','3,0 mm','5,0 mm'], a:0,
+ t:'Lágmarksmynstursdýpt hjólbarða er almennt 1,6 mm.',
+ f:'Lágmarksmynstursdýpt hjólbarða að sumri er 3,0 mm.',
+ e:'Almennt lágmark er 1,6 mm en að vetri (1. nóv.–14. apríl) er krafan 3,0 mm. Mynstrið veitir vatninu burt — slitin dekk stórauka hættu á fleytingu (vatnsplani) í bleytu.'},
+{c:'okutaeki', q:'Til hvers er mynstrið í hjólbörðum?',
+ o:['Að veita vatni burt og halda veggripi í bleytu','Aðeins til skrauts','Að minnka bensíneyðslu','Að draga úr veghljóði eingöngu'], a:0,
+ t:'Mynstur hjólbarða veitir vatni undan dekkinu og dregur úr hættu á fleytingu í bleytu.',
+ f:'Mynstur hjólbarða hefur eingöngu áhrif á veghljóð, ekki á veggrip.',
+ e:'Í bleytu þarf dekkið að pressa vatnið burt til að ná gripi í malbikið. Slitið dekk „flýtur“ upp á vatnsfilmunni (fleyting) og bíllinn verður stjórnlaus — dýpra mynstur = betri vörn.'},
+{c:'okutaeki', q:'Hvað gerir röng (of lág) loftþrýstingur í dekkjum?',
+ o:['Versnar aksturseiginleika, eykur eyðslu og slítur dekkjum ójafnt','Bætir grip í öllum aðstæðum','Hefur engin áhrif undir 90 km/klst','Minnkar hemlunarvegalengd'], a:0,
+ t:'Of lágur loftþrýstingur í dekkjum spillir stjórnhæfni bílsins og eykur eldsneytiseyðslu.',
+ f:'Loftþrýstingur í dekkjum skiptir engu máli fyrir aksturseiginleika bílsins.',
+ e:'Of lágur þrýstingur gerir bílinn óstöðugan í beygjum, lengir hemlun, eykur eyðslu og getur ofhitnað dekkið svo það springi. Kannaðu þrýstinginn reglulega, líka í varadekkinu.'},
+{c:'okutaeki', q:'Hverjir eiga að nota öryggisbelti?',
+ o:['Allir í bílnum, í hverri einustu ferð','Aðeins ökumaður','Aðeins þeir í framsætum','Aðeins á langferðum utan þéttbýlis'], a:0,
+ t:'Öllum sem sitja í bíl ber að nota öryggisbelti, einnig í aftursætum og í stuttum ferðum.',
+ f:'Farþegar í aftursæti þurfa ekki að nota öryggisbelti í stuttum ferðum innanbæjar.',
+ e:'Beltið er mikilvægasti öryggisbúnaður bílsins og bjargar mannslífum í öllum sætum. Óspenntur farþegi í aftursæti kastast fram með margföldum líkamsþunga og getur banað þeim sem sitja fyrir framan. Ökumaður ber ábyrgð á að börn yngri en 15 ára séu spennt.'},
+{c:'okutaeki', q:'Hvaða öryggisbúnað eiga börn lægri en 150 cm að nota í bíl?',
+ o:['Viðurkenndan barnabílstól eða sætishækkun sem hæfir stærð þeirra','Venjulegt öryggisbelti eins og fullorðnir','Engan sérstakan — bara sitja kyrr','Púða af heimilinu í sætinu'], a:0,
+ t:'Börn lægri en 150 cm skulu nota viðurkenndan öryggis- og verndarbúnað sem hæfir stærð þeirra.',
+ f:'Börn mega nota venjulegt öryggisbelti eitt og sér um leið og þau ná 120 cm hæð.',
+ e:'Fullorðinsbelti liggur rangt á litlum líkama og getur skaðað háls og kvið í árekstri. Þess vegna nota börn undir 150 cm bílstól eða sætishækkun. Bakvísandi barnastóll má aldrei vera í framsæti með virkum öryggispúða.'},
+{c:'okutaeki', q:'Hvernig stillir þú höfuðpúðann rétt?',
+ o:['Efri brún púðans í um það bil hæð við hvirfil, sem næst hnakkanum','Eins neðarlega og hægt er','Höfuðpúðinn er bara þægindabúnaður','Hann á að nema við herðar'], a:0,
+ t:'Höfuðpúði á að ná upp undir hvirfil og vera sem næst hnakkanum til að verja hálsinn í aftanákeyrslu.',
+ f:'Höfuðpúðinn er eingöngu hvíldarbúnaður og stilling hans skiptir ekki máli fyrir öryggi.',
+ e:'Í aftanákeyrslu kastast höfuðið aftur — rétt stilltur púði grípur það strax og ver hálsliðina gegn hnykkáverka (whiplash). Of lágur púði getur beinlínis aukið meiðslin.'},
+{c:'okutaeki', q:'Fyrir akstur í myrkri og slæmu skyggni þarftu sérstaklega að gæta þess að…',
+ o:['rúður, speglar og öll ljós séu hrein og í lagi','útvarpið virki','miðstöðin sé í botni','bíllinn sé nýþveginn að utan'], a:0,
+ t:'Óhreinar rúður og döpur ljós skerða sjón ökumanns verulega í myrkri og bleytu.',
+ f:'Smá óhreinindi á framrúðu hafa engin áhrif á akstursöryggi í myrkri.',
+ e:'Skítug framrúða margfaldar glýju frá ljósum bíla á móti og döpur eða skökk ljós lýsa illa og blinda aðra. Hreinsaðu rúður, spegla og ljós — og hafðu rúðuvökva á brúsanum.'},
+{c:'okutaeki', q:'Hemlaljós bílsins eru óvirk. Má aka honum?',
+ o:['Nei — án hemlaljósa fá aðrir enga viðvörun þegar þú hemlar, og aka ber beint í viðgerð','Já, ef ekið er varlega','Já, á daginn en ekki í myrkri','Já, ef handbremsan virkar'], a:0,
+ t:'Bilað hemlaljós skal lagfæra án tafar enda vara hemlaljósin aðra við þegar hemlað er.',
+ f:'Hemlaljós eru aukabúnaður og ekki nauðsynleg ef ökumaður hemlar tímanlega.',
+ e:'Án hemlaljósa sér ökumaðurinn fyrir aftan ekki að þú sért að hemla fyrr en bilið snarminnkar — aftanákeyrsla er þá skammt undan. Öryggisbúnaður á alltaf að vera virkur.'},
+{c:'okutaeki', q:'Loftpúði (airbag) kemur að fullu gagni…',
+ o:['aðeins með spenntu öryggisbelti','í stað öryggisbeltis','aðeins í aftanákeyrslum','aðeins ef sætið er alveg frammi'], a:0,
+ t:'Loftpúði er viðbót við öryggisbeltið og ver ökumann aðeins að fullu ef beltið er spennt.',
+ f:'Ef bíllinn er með loftpúða er óhætt að sleppa öryggisbeltinu.',
+ e:'Púðinn blæs út og hjaðnar á sekúndubroti. Óspenntur líkami skellur á honum af fullum þunga á röngu augnabliki — beltið heldur þér í réttri stöðu svo púðinn grípi þig mjúklega.'},
+
+/* ---------- MANNLEGIR ÞÆTTIR ---------- */
+{c:'mannlegt', q:'Hver eru refsimörk vínandamagns í blóði ökumanns?',
+ o:['0,5 prómill','1,0 prómill','0,2 prómill','2,0 prómill'], a:0,
+ t:'Ökumaður telst ekki geta stjórnað ökutæki örugglega ef vínandamagn í blóði nær 0,5 prómillum.',
+ f:'Refsimörk vínandamagns í blóði ökumanns eru 2,0 prómill.',
+ e:'Mörkin eru 0,5‰ í blóði (0,25 mg/l í útöndunarlofti). Dómgreind og viðbragð skerðast þó strax við minna magn — eina örugga reglan er að aka aldrei eftir að hafa drukkið áfengi.'},
+{c:'mannlegt', q:'Hvernig losnar áfengi hraðast úr líkamanum?',
+ o:['Aðeins með tímanum — hvorki kaffi, sturta né hreyfing flýta fyrir','Með sterku kaffi','Með köldu steypibaði','Með orkudrykk og fersku lofti'], a:0,
+ t:'Líkaminn brennir áfengi á jöfnum hraða og ekkert húsráð flýtir því ferli.',
+ f:'Sterkt kaffi og köld sturta gera ökumann fljótt ökuhæfan eftir drykkju.',
+ e:'Lifrin vinnur á áfenginu á föstum hraða (gróflega eitt „glas“ á klukkustund). Eftir mikla drykkju getur ökumaður enn verið yfir mörkum morguninn eftir — „þynnkuakstur“ er líka ölvunarakstur.'},
+{c:'mannlegt', q:'Hvað gildir um akstur eftir neyslu ávana- og fíkniefna?',
+ o:['Hann er bannaður — mælist ólöglegt efni í blóði telst ökumaður óhæfur til aksturs','Leyfilegur í litlu magni eins og áfengi','Leyfilegur ef efnið er löglegt erlendis','Aðeins bannaður atvinnubílstjórum'], a:0,
+ t:'Mælist ávana- eða fíkniefni í blóði ökumanns telst hann óhæfur til að stjórna ökutæki.',
+ f:'Fyrir fíkniefni gilda sambærileg prómillmörk og fyrir áfengi.',
+ e:'Fyrir ólögleg vímuefni gildir í raun núllregla — öll mælanleg neysla er refsiverð. Sum lyfseðilsskyld lyf skerða líka ökuhæfni; varúðarþríhyrningur á umbúðum kallar á samtal við lækni.'},
+{c:'mannlegt', q:'Hvert er eina raunverulega ráðið við þreytu undir stýri?',
+ o:['Að stöðva á öruggum stað og sofa/hvíla sig','Að opna gluggann og hækka í útvarpinu','Að aka hraðar til að klára ferðina fyrr','Að drekka orkudrykk og halda áfram'], a:0,
+ t:'Eina örugga ráðið við syfju undir stýri er að stöðva og hvílast — jafnvel stuttur blundur hjálpar.',
+ f:'Hávær tónlist og opinn gluggi halda syfjuðum ökumanni öruggum til lengdar.',
+ e:'Örsvefn (nokkurra sekúndna dúr) gerir ekki boð á undan sér — á 90 km/klst ferðast bíllinn 25 m á sekúndu stjórnlaus. Kaffi og gluggi fresta syfjunni aðeins í nokkrar mínútur; svefn er eina lausnin.'},
+{c:'mannlegt', q:'Má nota farsíma undir stýri?',
+ o:['Aðeins með handfrjálsum búnaði — að halda á símanum við akstur er bannað','Já, ef ekið er undir 50 km/klst','Já, á rauðu ljósi','Já, til að lesa skilaboð en ekki skrifa'], a:0,
+ t:'Notkun farsíma án handfrjáls búnaðar er bönnuð undir stýri, líka á rauðu ljósi.',
+ f:'Nota má farsíma frjálst undir stýri ef ekið er á löglegum hraða.',
+ e:'Sá sem horfir á síma í 2 sekúndur á 50 km/klst ekur tæpa 30 metra „blindandi“. Símanotkun margfaldar slysahættu og varðar sekt og punkta — handfrjáls búnaður er eina löglega leiðin, og athyglin á samt alltaf að vera á veginum.'},
+{c:'mannlegt', q:'Ungir ökumenn lenda hlutfallslega oftast í umferðarslysum. Helsta ástæðan er:',
+ o:['Reynsluleysi ásamt of miklum hraða og ofmati á eigin færni','Lélegri sjón en eldri ökumanna','Verri bílar','Að þeir aka mest í myrkri'], a:0,
+ t:'Reynsluleysi og ofmat á eigin getu eru meðal helstu orsaka slysa hjá ungum ökumönnum.',
+ f:'Ungir ökumenn lenda sjaldnar í slysum en aðrir aldurshópar vegna snerpu sinnar.',
+ e:'Fyrstu mánuðirnir með próf eru þeir hættulegustu á ökuferlinum. Snerpa bætir ekki upp reynsluleysi við að lesa umferðina — aktu á þínum hraða og láttu ekki farþega eða aðra ýta þér í áhættu.'},
+{c:'mannlegt', q:'Farþegar hvetja þig til að aka hraðar. Hvað gerir þú?',
+ o:['Held mínum örugga hraða — ökumaðurinn einn ber ábyrgð á akstrinum','Geri eins og þeir segja svo ferðin gangi','Sýni þeim hvað bíllinn kemst','Bið þann háværasta að taka við stýrinu á ferð'], a:0,
+ t:'Ökumaður ber einn ábyrgð á akstrinum og á ekki að láta farþega þrýsta sér í áhættu.',
+ f:'Beri farþegar ábyrgð á hvatningu sinni færist sök á slysi yfir á þá.',
+ e:'Hópþrýstingur er raunverulegur áhættuþáttur hjá ungum ökumönnum. Sá sem heldur um stýrið ber ábyrgðina — gagnvart lögum og farþegunum sjálfum. Öruggur ökumaður þorir að standa á sínu.'},
+{c:'mannlegt', q:'Hvaða áhrif hefur reiði eða uppnám á aksturshæfni?',
+ o:['Skerðir dómgreind og eykur áhættuhegðun — gott er að róa sig áður en lagt er af stað','Engin ef ökumaður er tæknilega fær','Bætir viðbragðstímann','Áhrifin hverfa um leið og sest er inn í bílinn'], a:0,
+ t:'Sterkar tilfinningar á borð við reiði geta skert dómgreind ökumanns og aukið áhættu í akstri.',
+ f:'Skap ökumanns hefur engin áhrif á aksturshæfni hans.',
+ e:'Reiður ökumaður tekur meiri áhættu, ekur hraðar og les umferðina verr. Sértu í uppnámi skaltu draga andann, bíða aðeins eða fá annan til að keyra.'},
+{c:'mannlegt', q:'Hvenær skerðist athygli ökumanns?',
+ o:['Við hvers kyns fjölverkavinnu: síma, mat, snyrtingu, háværar samræður eða þreytu','Aðeins við áfengisneyslu','Aldrei hjá vönum ökumönnum','Aðeins í myrkri'], a:0,
+ t:'Allt sem dregur huga eða augu frá veginum — sími, matur, samræður — skerðir athygli ökumanns.',
+ f:'Vanir ökumenn geta sinnt símanum án þess að athygli við aksturinn skerðist.',
+ e:'Athyglin er takmörkuð auðlind. Truflun getur verið sjónræn (augun af vegi), líkamleg (hendur af stýri) eða hugræn (hugurinn annars staðar) — sími sameinar allar þrjár.'},
+{c:'mannlegt', q:'Lyf með rauðum varúðarþríhyrningi á umbúðum…',
+ o:['getur skert ökuhæfni — kynntu þér leiðbeiningar eða ráðfærðu þig við lækni áður en þú ekur','er alltaf öruggt með kaffibolla','má taka ef ekið er stutt','skiptir aðeins máli fyrir atvinnubílstjóra'], a:0,
+ t:'Rauður varúðarþríhyrningur á lyfjaumbúðum varar við því að lyfið geti skert ökuhæfni.',
+ f:'Lyfseðilsskyld lyf hafa aldrei áhrif á hæfni til aksturs séu þau tekin eftir leiðbeiningum.',
+ e:'Ýmis lyf — svefnlyf, róandi lyf, sterk verkjalyf og sum ofnæmislyf — valda syfju og hægari viðbrögðum. Akstur undir slíkum áhrifum getur varðað sömu viðurlögum og ölvunarakstur.'},
+
+/* ---------- ALMENNIR AKSTURSHÆTTIR ---------- */
+{c:'akstur', q:'Hvorum megin er að jafnaði ekið fram úr öðrum bíl?',
+ o:['Vinstra megin','Hægra megin','Hvorum megin sem er','Þeim megin sem meira pláss er'], a:0,
+ t:'Að jafnaði skal aka fram úr vinstra megin.',
+ f:'Að jafnaði skal aka fram úr hægra megin.',
+ e:'Framúrakstur fer fram vinstra megin. Hægra megin má þó fara fram úr ökutæki sem er að beygja til vinstri — og í röðum á fjölakreinavegum þar sem akreinar ganga mishratt.'},
+{c:'akstur', q:'Hvar er framúrakstur bannaður, af eftirtöldu?',
+ o:['Við gangbraut, á blindhæð og rétt á undan eða á gatnamótum (nema á aðalbraut)','Á beinum vegi með brotinni miðlínu','Á tveggja akreina vegi í sömu átt','Utan þéttbýlis yfirleitt'], a:0,
+ t:'Framúrakstur er bannaður við gangbrautir, á blindhæðum og þar sem sér skammt fram á veginn.',
+ f:'Framúrakstur er leyfður á blindhæð ef ekið er hratt yfir hana.',
+ e:'Þar sem þú sérð ekki nægilega langt fram — blindhæðir, beygjur — eða þar sem óvarðir vegfarendur geta birst, eins og við gangbrautir og gatnamót, er framúrakstur bannaður.'},
+{c:'akstur', q:'Óbrotin miðlína (heil lína) er á veginum. Hvað þýðir hún?',
+ o:['Bannað er að aka yfir hana — framúrakstur sem krefst þess er óheimill','Hún er aðeins til viðmiðunar','Aka má yfir hana ef enginn sést á móti','Hún gildir aðeins í myrkri'], a:0,
+ t:'Óheimilt er að aka yfir óbrotna miðlínu.',
+ f:'Aka má yfir óbrotna miðlínu ef vegurinn virðist auður.',
+ e:'Heil miðlína er dregin þar sem framúrakstur yfir á öfugan vegarhelming er hættulegur, t.d. við blindhæðir og beygjur. Brotin lína leyfir framúrakstur þegar aðstæður eru öruggar.'},
+{c:'akstur', q:'Hvað þarf að vera tryggt áður en framúrakstur hefst?',
+ o:['Næg vegsýn, enginn á móti, enginn að fara fram úr mér — og hægt að ljúka honum án hættu','Aðeins að bíllinn á undan sé hægfara','Að flautað hafi verið tvisvar','Að ekið sé a.m.k. 30 km/klst yfir hámarkshraða á meðan'], a:0,
+ t:'Framúrakstur má aðeins hefja þegar honum verður örugglega lokið án hættu eða truflunar fyrir aðra.',
+ f:'Við framúrakstur er heimilt að fara vel yfir leyfðan hámarkshraða á meðan farið er fram úr.',
+ e:'Áður en þú ferð fram úr: speglar, öxl, stefnuljós — sjá nógu langt fram, enginn á móti, enginn byrjaður að taka fram úr þér. Hámarkshraðinn gildir líka á meðan framúrakstri stendur.'},
+{c:'akstur', q:'Þú ert í hringtorgi og ætlar út úr því. Hvenær gefur þú stefnuljós?',
+ o:['Til hægri þegar ég nálgast útaksturinn sem ég ætla að taka','Til vinstri allan hringinn','Aldrei í hringtorgi','Aðeins ef bíll er fyrir aftan mig'], a:0,
+ t:'Gefa skal stefnuljós til hægri þegar ekið er út úr hringtorgi.',
+ f:'Í hringtorgi á aldrei að nota stefnuljós.',
+ e:'Stefnuljós út úr hringtorginu segir bílum sem bíða við torgið að óhætt sé að aka inn — það heldur umferðinni gangandi. Gefðu það um leið og þú átt eina útkeyrslu eftir að þinni.'},
+{c:'akstur', q:'Hvað er „svæðisskipt athygli“ — hvert á ökumaður að horfa?',
+ o:['Langt fram á veginn, nær bílnum og reglulega í spegla — augun sífellt á hreyfingu','Fast á stuðara bílsins á undan','Aðeins á hraðamælinn','Á farþegann sem talar'], a:0,
+ t:'Öruggur ökumaður horfir langt fram á veg og skannar umhverfi og spegla reglulega.',
+ f:'Best er að einblína stöðugt á afturenda bílsins á undan.',
+ e:'Horfðu þangað sem þú verður eftir 10–15 sekúndur, ekki bara rétt fram fyrir húddið. Þannig sérðu hættur snemma og hefur tíma til að bregðast mjúklega við í stað þess að snögghemla.'},
+{c:'akstur', q:'Hvernig ekur þú niður langa, bratta brekku?',
+ o:['Í lágum gír og læt vélina hamla á móti — ekki hvíla stöðugt á hemlunum','Í hlutlausum gír til að spara bensín','Með fótinn á kúplingunni alla leið','Á handbremsunni'], a:0,
+ t:'Í langri brekku á að nota lágan gír og vélarhemlun svo hemlarnir ofhitni ekki.',
+ f:'Öruggast er að renna niður langa brekku í hlutlausum gír og hvíla á hemlunum.',
+ e:'Stöðug hemlun niður langa brekku ofhitar hemlana svo þeir geta hætt að virka. Lágur gír lætur vélina halda við bílinn — sama regla og vörubílar fylgja. Í hlutlausum gír hefurðu enga vélarhemlun og minna vald á bílnum.'},
+{c:'akstur', q:'Þegar bakkað er skal…',
+ o:['ganga úr skugga um að leiðin sé greið — snúa sér við/nota spegla og bakka hægt','bakka rösklega svo það taki stutta stund','treysta á að aðrir víki','flauta fyrst og bakka svo blint'], a:0,
+ t:'Áður en bakkað er skal ökumaður fullvissa sig um að leiðin sé greið og bakka hægt.',
+ f:'Sá sem bakkar á forgang gagnvart annarri umferð.',
+ e:'Sá sem bakkar (eða snýr við) ber alla ábyrgð og víkur fyrir allri annarri umferð. Aftan við bílinn er stórt blindsvæði — lítil börn sjást alls ekki. Snúðu þér við, notaðu spegla og bakkmyndavél og farðu hægt.'},
+{c:'akstur', q:'Hvað er sérstaklega varasamt við akstur á malarvegi?',
+ o:['Laust yfirborð, steinkast og lengri hemlunarvegalengd — hægja skal á þegar bíll mætir manni','Ekkert, malarvegir eru öruggari en malbik','Aðeins rykið','Að vegurinn er alltaf beinn'], a:0,
+ t:'Á malarvegi er veggrip minna og hemlunarvegalengd lengri en á bundnu slitlagi.',
+ f:'Á malarvegi er veggrip jafngott og á þurru malbiki.',
+ e:'Möl er laus undir dekkjum — bíllinn getur skrikað í beygjum og hemlun er löng. Mættu bíl á lækkuðum hraða úti í kanti: það minnkar steinkast og rykblindu. Varastu líka kantana, þeir eru oft lausir.'},
+{c:'akstur', q:'Malbik endar og malarvegur tekur við. Hvað gerir þú?',
+ o:['Dreg úr hraða áður en komið er út á mölina','Held óbreyttum hraða','Eyk hraðann til að fljóta ofan á','Hemlað fast nákvæmlega á skilunum'], a:0,
+ t:'Draga skal úr hraða áður en ekið er af bundnu slitlagi yfir á möl.',
+ f:'Óhætt er að halda 90 km/klst þegar ekið er af malbiki inn á malarveg.',
+ e:'Á skilunum breytist veggripið snögglega — mörg bílveltuslys verða einmitt þar. Hægðu á þér á malbikinu, áður en þú kemur á mölina, og forðastu snögghemlun og krappar hreyfingar á lausamöl.'},
+
+/* ---------- ÖKUSKÍRTEINI OG REGLUR ---------- */
+{c:'skirteini', q:'Hvenær má taka skriflega ökuprófið í fyrsta lagi?',
+ o:['Allt að tveimur mánuðum áður en maður verður 17 ára','Á 17 ára afmælisdaginn','16 ára','Hvenær sem er eftir Ökuskóla 1'], a:0,
+ t:'Skriflega prófið má taka mest tveimur mánuðum áður en próftaki verður 17 ára.',
+ f:'Skriflega ökuprófið má ekki taka fyrr en á 17 ára afmælisdaginn.',
+ e:'Skriflega prófið má taka allt að 2 mánuðum fyrir 17 ára afmælið, en ökuskírteinið sjálft fæst ekki fyrr en 17 ára aldri er náð.'},
+{c:'skirteini', q:'Hvernig er skriflega ökuprófið uppbyggt?',
+ o:['50 fullyrðingar sem svarað er með „rétt“ eða „rangt“ — 45 réttar þarf til að standast','30 krossaspurningar með fjórum valmöguleikum','100 spurningar, helmingur þarf að vera réttur','Munnlegt próf hjá prófdómara'], a:0,
+ t:'Skriflega prófið er rafrænt með 50 fullyrðingum og til að standast þarf minnst 45 réttar.',
+ f:'Í skriflega prófinu má hafa 15 villur af 50 og standast samt.',
+ e:'Frá maí 2024 er prófið rafrænt: 50 fullyrðingar, svarað rétt/rangt á spjaldtölvu, og niðurstaðan birtist strax. 45 af 50 (90%) þarf til að ná — æfingaprófin hér nota sama viðmið.'},
+{c:'skirteini', q:'Hvenær má hefja æfingaakstur með leiðbeinanda?',
+ o:['16 ára, eftir Ökuskóla 1 og tilskilda ökutíma, með samþykktan leiðbeinanda','15 ára með foreldri','Strax og ökunám hefst, án skilyrða','17 ára'], a:0,
+ t:'Æfingaakstur með leiðbeinanda má hefja 16 ára að uppfylltum skilyrðum um nám og leyfi.',
+ f:'Æfingaakstur með foreldri má hefja strax 15 ára.',
+ e:'Eftir Ökuskóla 1 og fyrstu ökutímana hjá ökukennara getur nemandi frá 16 ára aldri æft sig með samþykktum leiðbeinanda. Bíllinn skal merktur „Æfingaakstur“ og leiðbeinandinn telst stjórnandi bílsins.'},
+{c:'skirteini', q:'Hvaða kröfur eru gerðar til leiðbeinanda í æfingaakstri?',
+ o:['A.m.k. 24 ára, með gild réttindi í minnst 5 ár og samþykki sýslumanns','Bara að vera með bílpróf','18 ára með eins árs reynslu','Að vera menntaður ökukennari'], a:0,
+ t:'Leiðbeinandi í æfingaakstri skal hafa náð 24 ára aldri og haft ökuréttindi í að minnsta kosti 5 ár.',
+ f:'Hver sem er með bílpróf getur verið leiðbeinandi í æfingaakstri án sérstaks leyfis.',
+ e:'Leiðbeinandinn þarf að vera orðinn 24 ára, hafa haft B-réttindi samfellt í minnst 5 ár og fá leyfi áður en æfingaakstur hefst. Hann ber ábyrgð eins og ökumaður á meðan.'},
+{c:'skirteini', q:'Hvað gildir fyrsta ökuskírteinið (bráðabirgðaskírteini) lengi?',
+ o:['Í 3 ár','Í 10 ár','Í 1 ár','Ævilangt'], a:0,
+ t:'Fyrsta ökuskírteinið er bráðabirgðaskírteini sem gildir í 3 ár.',
+ f:'Fyrsta ökuskírteinið er fullnaðarskírteini sem gildir í 10 ár.',
+ e:'Byrjendur fá bráðabirgðaskírteini til 3 ára. Til að fá fullnaðarskírteini þarf að hafa haft það í minnst ár, ljúka akstursmati hjá ökukennara og hafa verið án punkta síðustu 12 mánuði.'},
+{c:'skirteini', q:'Hvað þarf til að fá fullnaðarskírteini eftir bráðabirgðaskírteini?',
+ o:['Að hafa haft bráðabirgðaskírteini í minnst 1 ár, ljúka akstursmati og vera punktalaus síðustu 12 mánuði','Aðeins að verða 20 ára','Að taka skriflega prófið aftur','Ekkert — það kemur sjálfkrafa í pósti'], a:0,
+ t:'Fullnaðarskírteini fæst eftir minnst eitt ár með bráðabirgðaskírteini, akstursmat og punktalausa 12 mánuði.',
+ f:'Fullnaðarskírteini fæst sjálfkrafa þegar bráðabirgðaskírteinið rennur út.',
+ e:'Skilyrðin eru: minnst 1 ár með bráðabirgðaskírteini, akstursmat hjá ökukennara og hvorki punktar né svipting síðustu 12 mánuði. Annars þarf að endurnýja bráðabirgðaskírteinið.'},
+{c:'skirteini', q:'Hvað gerist ef handhafi bráðabirgðaskírteinis fær 4 punkta í punktakerfinu?',
+ o:['Hann sætir akstursbanni og þarf sérstakt námskeið og próf að nýju','Ekkert fyrr en við 12 punkta','Hann fær aðvörunarbréf eingöngu','Punktar ná ekki til byrjenda'], a:0,
+ t:'Byrjandi með bráðabirgðaskírteini sætir akstursbanni við 4 punkta.',
+ f:'Handhafi bráðabirgðaskírteinis má safna 12 punktum áður en til akstursbanns kemur.',
+ e:'Fyrir byrjendur gilda strangari mörk: 4 punktar leiða til akstursbanns (reyndari ökumenn þola 12 punkta á 3 árum). Eftir akstursbann þarf sérstakt námskeið og ökupróf að nýju. Hraðakstur, símanotkun og fleiri brot gefa punkta.'},
+{c:'skirteini', q:'Þarf ökumaður að hafa ökuskírteinið meðferðis við akstur?',
+ o:['Já, ökuskírteini skal haft meðferðis við akstur (stafrænt skírteini gildir innanlands)','Nei, aldrei','Aðeins utan þéttbýlis','Aðeins fyrstu 3 árin'], a:0,
+ t:'Ökumanni ber að hafa ökuskírteini sitt meðferðis við akstur og stafrænt skírteini gildir innanlands.',
+ f:'Ökuskírteinið má alltaf geyma heima því lögregla flettir öllum upp í tölvu.',
+ e:'Skírteinið er sönnun ökuréttinda og á að vera með í för — stafræna ökuskírteinið í símanum gildir á Íslandi. Erlendis þarf yfirleitt plastkortið.'},
+{c:'skirteini', q:'Hvaða tryggingar þarf skráður eigandi bíls að hafa?',
+ o:['Lögboðna ábyrgðartryggingu — hún bætir tjón sem bíllinn veldur öðrum','Enga ef bíllinn er gamall','Aðeins kaskótryggingu','Ferðatryggingu'], a:0,
+ t:'Skylt er að ábyrgðartryggja skráningarskylt ökutæki og tryggingin bætir tjón sem öðrum er valdið.',
+ f:'Ábyrgðartrygging ökutækis bætir allt tjón á eigin bíl ökumanns, hver sem á sök.',
+ e:'Ábyrgðartryggingin er lögboðin og bætir tjón sem þú veldur öðrum — fólki og eignum. Tjón á eigin bíl í eigin sök bætist aðeins með frjálsri kaskótryggingu. Óvátryggðum bíl má ekki aka.'},
+{c:'skirteini', q:'B-réttindi (venjulegt bílpróf) veita rétt til að aka…',
+ o:['fólksbíl og sendibíl allt að 3.500 kg með allt að 8 farþegasæti auk ökumanns','öllum bílum, líka vörubílum','fólksbíl og stórum mótorhjólum','hópbifreiðum í atvinnuskyni'], a:0,
+ t:'B-flokkur veitir rétt til að aka bifreið sem er 3.500 kg eða minna að leyfðri heildarþyngd.',
+ f:'B-flokkur veitir rétt til að stjórna vörubíl og hópferðabíl.',
+ e:'B-réttindin ná til bíla að 3.500 kg heildarþyngd með mest 8 farþegasæti auk ökumanns, ásamt léttum eftirvagni. Vörubílar, rútur og stór mótorhjól krefjast annarra réttindaflokka.'},
+
+/* ---------- VIÐBRÖGÐ VIÐ ÓHÖPPUM ---------- */
+{c:'ohopp', q:'Hvert hringir þú eftir aðstoð þegar umferðarslys verður?',
+ o:['112','118','1717','551-1166'], a:0,
+ t:'Neyðarnúmerið á Íslandi er 112.',
+ f:'Neyðarnúmerið á Íslandi er 911.',
+ e:'112 er neyðarnúmerið fyrir lögreglu, sjúkralið og slökkvilið um land allt. Gefðu upp staðsetningu eins nákvæmlega og þú getur, fjölda slasaðra og ástand þeirra — og leggðu ekki á fyrr en þér er sagt.'},
+{c:'ohopp', q:'Þú kemur fyrstur að umferðarslysi með slösuðum. Hver er rétt röð aðgerða?',
+ o:['Tryggja vettvang svo ekki verði fleiri slys, hringja í 112, veita fyrstu hjálp','Byrja strax á fyrstu hjálp áður en nokkuð annað er gert','Taka myndir fyrir tryggingarnar','Færa alla slasaða strax út af veginum'], a:0,
+ t:'Fyrsta verk á slysstað er að tryggja vettvanginn svo ekki hljótist fleiri slys af.',
+ f:'Fyrsta verk á slysstað er alltaf að hefja endurlífgun áður en hringt er eða vettvangur tryggður.',
+ e:'Röðin er: 1) tryggja vettvang (neyðarljós, þríhyrningur, eigið öryggi) — annars getur næsti bíll ekið inn í hópinn, 2) hringja í 112, 3) veita fyrstu hjálp eftir getu. Þér er skylt að veita aðstoð.'},
+{c:'ohopp', q:'Máttu yfirgefa vettvang eftir að hafa lent í umferðaróhappi?',
+ o:['Nei — skylt er að nema staðar, skiptast á upplýsingum og aðstoða eftir þörfum','Já, ef tjónið virðist lítið','Já, ef enginn sá til','Já, ef hinn aðilinn er reiður'], a:0,
+ t:'Ökumanni sem á aðild að umferðaróhappi er skylt að nema staðar og gefa upplýsingar um sig.',
+ f:'Sé tjón smávægilegt má aka á brott af vettvangi án þess að gera vart við sig.',
+ e:'Að stinga af frá óhappi er refsivert. Stöðvaðu, kannaðu meiðsl, skiptu á nafni, símanúmeri, bílnúmeri og tryggingafélagi. Valdirðu tjóni á kyrrstæðum bíl skaltu skilja eftir miða með upplýsingum.'},
+{c:'ohopp', q:'Minniháttar árekstur, engin meiðsl, bílarnir gangfærir en teppa umferð. Hvað gerið þið?',
+ o:['Myndið aðstæður, færið bílana svo þeir trufli ekki umferð og fyllið út tjónaskýrslu','Skiljið bílana eftir nákvæmlega þar sem þeir stöðvuðust þar til lögregla kemur, hvað sem líður umferð','Akið hvor sína leið og gerið upp símleiðis seinna','Rífist um sökina á staðnum'], a:0,
+ t:'Eftir minniháttar óhapp án meiðsla á að færa bílana úr veginum þegar afstaða hefur verið skráð eða mynduð.',
+ f:'Eftir öll umferðaróhöpp er skylda að bíða eftir lögreglu áður en bílar eru færðir.',
+ e:'Við minniháttar óhapp: takið myndir af afstöðu bílanna, færið þá svo þeir skapi ekki frekari hættu og fyllið sameiginlega út tjónaskýrslu. Lögregla þarf að koma ef meiðsl verða, deilt er um atvik eða ökumaður er t.d. ölvaður.'},
+{c:'ohopp', q:'Hvað á að vera í öllum bílum til öryggis?',
+ o:['Viðvörunarþríhyrningur — og gott að hafa líka sjúkrakassa og endurskinsvesti','Aðeins varadekk','Slökkvitæki er það eina sem skiptir máli','Ekkert er skylt'], a:0,
+ t:'Viðvörunarþríhyrningur á að vera í bílnum til að vara aðra við ef bíllinn stöðvast þar sem hætta skapast.',
+ f:'Viðvörunarþríhyrningur er aðeins skylda í vörubílum.',
+ e:'Þríhyrningurinn er skyldubúnaður og bjargar mestu þegar bíll bilar á vegi — sérstaklega í myrkri og slæmu skyggni. Sjúkrakassi og endurskinsvesti eru skynsamleg viðbót.'},
+{c:'ohopp', q:'Bíllinn þinn bilar á miðri akbraut á fjölförnum vegi. Hvað gerir þú fyrst?',
+ o:['Kveiki neyðarljós, kem farþegum á öruggan stað utan vegar og set upp þríhyrning','Stend fyrir aftan bílinn og bendi umferð fram hjá','Geri við bílinn á staðnum í rólegheitum','Bíð inni í bílnum með ljósin slökkt'], a:0,
+ t:'Bili bíllinn á akbraut skal kveikja neyðarljósin og koma fólki á öruggan stað utan vegar.',
+ f:'Bili bíll á fjölförnum vegi er öruggast fyrir farþega að sitja áfram inni í honum á meðan beðið er.',
+ e:'Fólk á og við kyrrstæðan bíl á akbraut er í bráðri hættu. Neyðarljós strax, allir út þeim megin sem snýr frá umferð, upp fyrir vegrið/út í kant — svo þríhyrningur og aðstoð hringd út.'},
+{c:'ohopp', q:'Þú ekur á kind á þjóðvegi. Hvað ber þér að gera?',
+ o:['Stöðva, tryggja vettvang og gera lögreglu eða eiganda viðvart','Halda áfram — kindur eru á eigin ábyrgð','Færa kindina út fyrir veg og halda svo áfram án þess að láta vita','Flauta og aka hraðar'], a:0,
+ t:'Aki maður á búfénað ber að stöðva og gera viðvart, t.d. lögreglu eða eiganda dýrsins.',
+ f:'Aki maður á kind má halda ferð sinni áfram án þess að láta nokkurn vita.',
+ e:'Sauðfé við vegi er hluti af íslenskum veruleika — sérstaklega á vorin og haustin. Verði dýr fyrir bíl skal stöðva, huga að dýrinu og tilkynna atvikið; slasað dýr má ekki liggja kvalið án þess að brugðist sé við.'},
+{c:'ohopp', q:'Hvað er „keðjuárekstur“ á hraðbraut og hvernig forðastu að lenda í honum?',
+ o:['Margir bílar aka saman aftan á hver annan — gott bil og athygli á umferð langt framundan ver þig','Árekstur við keðjur á veginum','Óhjákvæmilegt fyrirbæri í mikilli umferð','Árekstur sem varðar aðeins fremsta bílinn'], a:0,
+ t:'Nægilegt bil í næsta bíl og athygli langt fram á veg draga úr hættu á aftanákeyrslu í umferðarstoppi.',
+ f:'Í þéttri hraðbrautarumferð er öruggast að fylgja næsta bíl sem allra fastast eftir.',
+ e:'Keðjuárekstrar verða þegar bílar aka of þétt og einn hemlar snöggt. Vörnin er einföld: 2–3 sekúndna bil, augun langt fram — og kveiktu neyðarljósin ef þú kemur að kyrrstæðri röð svo næsti fái viðvörun.'},
+{c:'ohopp', q:'Hvenær ber vitni að umferðarslysi skylda til að hjálpa?',
+ o:['Alltaf — öllum er skylt að veita aðstoð eftir getu á slysstað','Aðeins heilbrigðisstarfsfólki','Aðeins þeim sem ollu slysinu','Aldrei, hjálp er valfrjáls'], a:0,
+ t:'Öllum vegfarendum er skylt að veita aðstoð á slysstað eftir bestu getu.',
+ f:'Aðeins þeim sem eiga aðild að slysi er skylt að stöðva og hjálpa.',
+ e:'Hjálparskyldan nær til allra sem koma að slysi — að stöðva, hringja í 112 og aðstoða eftir getu. Að aka fram hjá slösuðum án þess að sinna þeim er refsivert.'},
+{c:'ohopp', q:'Af hverju á ekki að færa alvarlega slasaðan einstakling að óþörfu?',
+ o:['Hreyfing getur aukið innri áverka, t.d. á hálsi og baki — fært aðeins úr bráðri lífshættu','Til að tryggingarnar sjái áverkana','Það skiptir engu máli','Svo lögreglan geti mælt vettvang'], a:0,
+ t:'Slasaðan á ekki að hreyfa að óþörfu nema bráð hætta steðji að, t.d. eldur.',
+ f:'Alla slasaða á að draga strax út úr bílum eftir árekstur.',
+ e:'Röng hreyfing getur breytt hálsáverka í lömun. Láttu hinn slasaða vera kyrran, haltu á honum hita og fylgstu með öndun — nema bráð hætta (eldur, umferð) krefjist flutnings. Meðvitundarlausan sem andar má leggja í hliðarlegu.'},
+
+/* ---------- VETRARAKSTUR OG AÐSTÆÐUR ---------- */
+{c:'vetur', img:'halka', q:'Þetta merki varar við:',
+ o:['Hálku eða sleipum vegi framundan','Malarvegi','Beygju til hægri','Vegavinnu'], a:0,
+ t:'Merkið með bílnum og hlykkjóttu förunum varar við sleipum vegi.',
+ f:'Merkið með bílnum og hlykkjóttu förunum táknar að vegurinn framundan sé holóttur.',
+ e:'Viðvörunarmerki um hálku/sleipan veg. Dragðu úr hraða, auktu bilið og forðastu snöggar hreyfingar á stýri, bensíngjöf og hemlum.'},
+{c:'vetur', q:'Hversu miklu lengri getur hemlunarvegalengd orðið á ísi miðað við autt malbik?',
+ o:['Margfalt lengri — allt að tífalt eða meira','Nokkurn veginn sú sama','Um 10% lengri','Styttri, því ís er sléttur'], a:0,
+ t:'Hemlunarvegalengd á ís getur orðið margfalt lengri en á auðu malbiki.',
+ f:'Með góðum vetrardekkjum er hemlunarvegalengd á ís svipuð og á auðu malbiki.',
+ e:'Á glæru getur hemlunarvegalengdin margfaldast — jafnvel meira en tífaldast. Engin dekk upphefja eðlisfræðina. Lausnin er hraðalækkun og margfalt bil, ekki traust á búnaðinn.'},
+{c:'vetur', q:'Á hvaða tímabili eru negld vetrardekk leyfð?',
+ o:['Frá 1. nóvember til 14. apríl','Allt árið','Frá 1. september til 1. júní','Aðeins í desember'], a:0,
+ t:'Nagladekk eru leyfð frá 1. nóvember til 14. apríl.',
+ f:'Nagladekk má nota allt árið um kring.',
+ e:'Nagladekkjatímabilið er 1. nóvember til 14. apríl — utan þess varðar notkun þeirra sektum, nema sérstakar vetraraðstæður réttlæti hana. Ónegld vetrardekk má nota lengur.'},
+{c:'vetur', q:'Hvar má sérstaklega búast við hálkublettum þótt vegurinn sé að mestu auður?',
+ o:['Á brúm, í skuggsælum lautum og þar sem vatn hefur runnið yfir veg','Á fjölförnustu köflunum','Hvergi ef hiti er yfir frostmarki í bílnum','Aðeins á fjallvegum'], a:0,
+ t:'Brýr og skuggsælir staðir frjósa fyrr en vegurinn í kring og þar geta leynst hálkublettir.',
+ f:'Sýni hitamælir bílsins 2 stiga hita getur hvergi verið hálka á veginum.',
+ e:'Brýr kólna frá báðum hliðum og frjósa fyrst. Skuggar, lautir og staðir með rakastreymi geyma ís þótt annað sé autt. Hitamælir bílsins mælir loftið, ekki vegyfirborðið — við 0–4°C skaltu alltaf gera ráð fyrir hálkublettum.'},
+{c:'vetur', q:'Bíllinn byrjar að skrika í hálku í beygju. Hvað er grundvallarreglan?',
+ o:['Halda ró, sleppa bensíngjöf, forðast snögga hemlun og stýra mjúklega í akstursstefnuna','Hemla eins fast og hægt er og rykkja í stýrið','Gefa hressilega í','Draga upp handbremsuna'], a:0,
+ t:'Í skriki á að létta á bensíngjöf og stýra mjúklega — snöggar hreyfingar auka skrikið.',
+ f:'Byrji bíllinn að skrika í hálku er rétt að snögghemla og snúa stýrinu eins hratt og hægt er.',
+ e:'Snöggar hreyfingar rjúfa það litla grip sem eftir er. Slepptu bensíngjöfinni, horfðu og stýrðu mjúklega þangað sem þú vilt fara. Besta vörnin er samt að aka svo hægt að aldrei komi til skriks.'},
+{c:'vetur', q:'Fyrir vetrarferð milli landshluta á Íslandi áttu að…',
+ o:['kanna færð og veðurspá (t.d. umferdin.is/vedur.is), láta vita af ferðaáætlun og hafa hlý föt í bílnum','leggja bara af stað — vegir eru alltaf færir','treysta á að vera á jeppa','fylgja bara bílnum á undan'], a:0,
+ t:'Fyrir vetrarferðir á að kanna færð og veðurspá og láta vita um ferðaáætlun.',
+ f:'Á Íslandi er óþarfi að kanna færð að vetri því allir þjóðvegir eru ruddir jafnóðum.',
+ e:'Veður og færð á Íslandi geta gjörbreyst á klukkustund. Kannaðu umferdin.is og vedur.is, segðu einhverjum frá áætlun þinni og hafðu hlý föt, síma og hleðslu — fjallvegir og heiðar geta lokast fyrirvaralaust.'},
+{c:'vetur', q:'Hvað er fleyting (vatnsplan) og hvernig bregstu við?',
+ o:['Dekkin missa snertingu við veginn á vatnsfilmu — slepptu bensíngjöf rólega og haltu stýrinu beinu','Bíllinn flýtur í djúpu vatni — opnaðu gluggana','Vökvi í hemlakerfinu frýs — dældu bremsunni','Rafkerfið blotnar — slökktu á vélinni'], a:0,
+ t:'Í fleytingu missa dekkin grip á vatnsfilmu og þá skal létta rólega á bensíngjöf án snöggra hreyfinga.',
+ f:'Besta viðbragðið við fleytingu er að hemla fast svo dekkin nái aftur niður.',
+ e:'Í mikilli bleytu getur vatnsfilma lyft dekkjunum frá veginum — stýri og hemlar hætta að svara. Ekki hemla, ekki rykkja: slepptu gjöfinni og haltu beinu striki þar til gripið kemur aftur. Forvörnin er lægri hraði og gott mynstur.'},
+{c:'vetur', q:'Fyrir akstur í snjókomu þarftu að hreinsa af bílnum:',
+ o:['Allar rúður, ljós, spegla og snjó af þaki og húddi','Aðeins gat á framrúðuna bílstjóramegin','Bara númeraplöturnar','Ekkert, snjórinn fýkur af'], a:0,
+ t:'Fyrir akstur skal hreinsa snjó og ís af öllum rúðum, ljósum og speglum og einnig af þaki bílsins.',
+ f:'Nægilegt er að skafa lítið gat á framrúðuna bílstjóramegin áður en ekið er af stað.',
+ e:'Þú verður að sjá vel í allar áttir og aðrir að sjá ljósin þín. Snjór af þakinu getur runnið fram á rúðuna við hemlun eða fokið yfir bílinn fyrir aftan. Gefðu þér tímann í skafið — það er hluti af ferðinni.'},
+{c:'vetur', q:'Þú lendir í þéttri þoku. Hvað gerir þú?',
+ o:['Hægi á, kveiki lágljós/þokuljós, eyk bilið og fylgi hægri vegbrún — stöðva ALDREI á akbrautinni','Kveiki háljósin til að sjá lengra','Stöðva á miðjum veginum og bíð','Ek þétt aftan við næsta bíl og fylgi ljósunum hans'], a:0,
+ t:'Í þoku á að nota lágljós eða þokuljós — háljós endurkastast í þokunni og blinda ökumanninn sjálfan.',
+ f:'Í þéttri þoku sér maður best með háljósunum.',
+ e:'Háljós lýsa upp þokuna sjálfa og gera skyggnið verra. Notaðu lágljós/þokuljós, hægðu vel á þér, auktu bil og notaðu kantlínuna til viðmiðunar. Þurfir þú að stöðva, farðu alveg út fyrir veg.'},
+{c:'vetur', q:'Sterk hviðuvindviðvörun er í gildi á leið þinni. Hvað áttu að hafa í huga?',
+ o:['Hviður geta feykt bílnum til — hægja á, halda stýrinu föstum tökum og varast opin svæði og brúarenda','Vindur hefur ekki áhrif á fólksbíla','Best er að aka hraðar gegnum hviðurnar','Vindviðvaranir gilda bara um húsbíla'], a:0,
+ t:'Sterkar vindhviður geta kastað bíl til á veginum, sérstaklega við brúarenda, fjallaskörð og opin svæði.',
+ f:'Vindhviður hafa aðeins áhrif á háar sendibifreiðar en aldrei á fólksbíla.',
+ e:'Íslenskar hviður ná vel yfir 30 m/s og geta fært bíl milli akreina eða út af vegi — og feykt upp grjóti og sandi. Hægðu á þér, haltu báðum höndum á stýri og fylgstu með viðvörunum á vedur.is og umferdin.is.'},
+
+];
+
+/* =================== ÁSTAND =================== */
+let mode = 'aefing';
+let selCats = new Set(Object.keys(CATS));
+let qLen = 25;
+let quiz = [];        // [{item, kind:'mc'|'tf', opts, correct, statement, chosen}]
+let idx = 0;
+let timerId = null, timeLeft = 0;
+let showingAll = false;
+
+/* =================== HEIMASKJÁR =================== */
+function buildChips(){
+  const box = document.getElementById('chips');
+  box.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'chip sel'; all.id = 'chipAll'; all.textContent = 'Allir flokkar';
+  all.onclick = () => { selCats = new Set(Object.keys(CATS)); refreshChips(); };
+  box.appendChild(all);
+  for(const [id,name] of Object.entries(CATS)){
+    const b = document.createElement('button');
+    b.className = 'chip'; b.dataset.cat = id; b.textContent = name;
+    b.onclick = () => {
+      if(selCats.size === Object.keys(CATS).length){ selCats = new Set([id]); }
+      else if(selCats.has(id)){ selCats.delete(id); if(selCats.size===0) selCats = new Set(Object.keys(CATS)); }
+      else selCats.add(id);
+      refreshChips();
+    };
+    box.appendChild(b);
+  }
+  refreshChips();
+}
+function refreshChips(){
+  const isAll = selCats.size === Object.keys(CATS).length;
+  document.getElementById('chipAll').classList.toggle('sel', isAll);
+  document.querySelectorAll('.chip[data-cat]').forEach(c=>{
+    c.classList.toggle('sel', !isAll && selCats.has(c.dataset.cat));
+  });
+}
+function setMode(m){
+  mode = m;
+  document.getElementById('modeAefing').classList.toggle('sel', m==='aefing');
+  document.getElementById('modeProf').classList.toggle('sel', m==='prof');
+  document.getElementById('optCats').classList.toggle('hidden', m==='prof');
+  document.getElementById('optLen').classList.toggle('hidden', m==='prof');
+  document.getElementById('profInfo').classList.toggle('hidden', m!=='prof');
+}
+function setLen(n){
+  qLen = n;
+  document.querySelectorAll('#lenSeg button').forEach(b=>b.classList.toggle('sel', +b.dataset.n===n));
+}
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+/* =================== PRÓF =================== */
+function makeQuiz(items, kind){
+  return items.map(item=>{
+    if(kind==='tf'){
+      const useTrue = Math.random() < 0.5;
+      return { item, kind:'tf',
+        statement: useTrue ? item.t : item.f,
+        correct: useTrue ? 0 : 1,   // 0 = Rétt, 1 = Rangt
+        chosen: null };
+    }
+    const order = shuffle([0,1,2,3]);
+    return { item, kind:'mc',
+      opts: order.map(i=>item.o[i]),
+      correct: order.indexOf(item.a),
+      chosen: null };
+  });
+}
+function startQuiz(){
+  let pool, kind;
+  if(mode==='prof'){
+    pool = shuffle([...BANK]).slice(0,50);
+    kind = 'tf';
+  } else {
+    pool = shuffle(BANK.filter(x=>selCats.has(x.c))).slice(0,qLen);
+    kind = 'mc';
+  }
+  if(pool.length===0) return;
+  quiz = makeQuiz(pool, kind);
+  idx = 0; showingAll = false;
+  show('quiz');
+  if(mode==='prof'){ startTimer(45*60); }
+  else document.getElementById('timer').classList.add('hidden');
+  renderQ();
+}
+function startTimer(sec){
+  timeLeft = sec;
+  const el = document.getElementById('timer');
+  el.classList.remove('hidden','low');
+  tick();
+  timerId = setInterval(tick, 1000);
+  function tick(){
+    const m = Math.floor(timeLeft/60), s = timeLeft%60;
+    el.textContent = m+':'+String(s).padStart(2,'0');
+    if(timeLeft<=300) el.classList.add('low');
+    if(timeLeft<=0){ clearInterval(timerId); timerId=null; finish(); return; }
+    timeLeft--;
+  }
+}
+function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+
+function renderQ(){
+  const Q = quiz[idx];
+  document.getElementById('qCount').textContent = 'Spurning '+(idx+1)+' af '+quiz.length;
+  document.getElementById('pfill').style.width = (idx/quiz.length*100)+'%';
+  document.getElementById('qCat').textContent = CATS[Q.item.c];
+  document.getElementById('qText').textContent = Q.kind==='tf' ? Q.statement : Q.item.q;
+  const imgBox = document.getElementById('qImg');
+  imgBox.innerHTML = Q.item.img && SIGNS[Q.item.img] ? SIGNS[Q.item.img] : '';
+  const ansBox = document.getElementById('qAns');
+  ansBox.innerHTML = '';
+  const labels = Q.kind==='tf' ? ['Rétt','Rangt'] : Q.opts;
+  const tags = Q.kind==='tf' ? ['✓','✗'] : ['A','B','C','D'];
+  labels.forEach((txt,i)=>{
+    const b = document.createElement('button');
+    b.className = 'ans';
+    b.innerHTML = '<span class="tag">'+tags[i]+'</span><span>'+txt+'</span>';
+    b.onclick = ()=>answer(i);
+    ansBox.appendChild(b);
+  });
+  document.getElementById('qExp').classList.add('hidden');
+  document.getElementById('nextBtn').classList.add('hidden');
+}
+function answer(i){
+  const Q = quiz[idx];
+  if(Q.chosen!==null) return;
+  Q.chosen = i;
+  const btns = document.querySelectorAll('#qAns .ans');
+  btns.forEach(b=>b.disabled=true);
+  const instant = mode==='aefing' && document.getElementById('instant').checked;
+  if(instant){
+    btns[Q.correct].classList.add('correct');
+    if(i!==Q.correct) btns[i].classList.add('wrong');
+    const exp = document.getElementById('qExp');
+    exp.textContent = Q.item.e;
+    exp.classList.remove('hidden');
+    const nb = document.getElementById('nextBtn');
+    nb.textContent = idx+1<quiz.length ? 'Áfram' : 'Sjá niðurstöður';
+    nb.classList.remove('hidden');
+  } else {
+    btns[i].classList.add('sel');
+    setTimeout(nextQ, 250);
+  }
+}
+function nextQ(){
+  if(idx+1 < quiz.length){ idx++; renderQ(); }
+  else finish();
+}
+function quitQuiz(){
+  stopTimer();
+  if(quiz.some(q=>q.chosen!==null)) finish();
+  else goHome();
+}
+
+/* =================== NIÐURSTÖÐUR =================== */
+function finish(){
+  stopTimer();
+  const n = quiz.length;
+  const right = quiz.filter(q=>q.chosen===q.correct).length;
+  const need = mode==='prof' ? 45 : Math.ceil(n*0.9);
+  const pct = n ? Math.round(right/n*100) : 0;
+  document.getElementById('rScore').textContent = right+' / '+n;
+  document.getElementById('rPct').textContent = pct+'% rétt';
+  const pass = right >= need;
+  document.getElementById('rBadge').innerHTML =
+    '<span class="badge '+(pass?'pass':'fail')+'">'+(pass?'Staðist! 🎉':'Ekki staðist')+'</span>';
+  document.getElementById('rNote').textContent =
+    mode==='prof'
+      ? 'Í alvöru prófinu þarf 45 rétt svör af 50 (90%).'
+      : 'Viðmið: '+need+' af '+n+' rétt (90%), eins og í alvöru prófinu.';
+  // flokkar
+  const per = {};
+  quiz.forEach(q=>{
+    per[q.item.c] = per[q.item.c] || {r:0,n:0};
+    per[q.item.c].n++;
+    if(q.chosen===q.correct) per[q.item.c].r++;
+  });
+  const catBox = document.getElementById('rCats');
+  catBox.innerHTML = '';
+  Object.entries(per).sort((a,b)=>(a[1].r/a[1].n)-(b[1].r/b[1].n)).forEach(([c,v])=>{
+    const p = Math.round(v.r/v.n*100);
+    const color = p>=90 ? 'var(--ok)' : p>=70 ? '#e5a13a' : 'var(--err)';
+    catBox.insertAdjacentHTML('beforeend',
+      '<div class="row"><div class="lbl"><b>'+CATS[c]+'</b><span>'+v.r+'/'+v.n+'</span></div>'+
+      '<div class="bar"><div style="width:'+p+'%;background:'+color+'"></div></div></div>');
+  });
+  renderReview();
+  document.getElementById('retryBtn').classList.toggle('hidden', right===n);
+  show('results');
+  document.getElementById('pfill').style.width='100%';
+}
+function reviewHTML(q){
+  const isTF = q.kind==='tf';
+  const qtxt = isTF ? q.statement : q.item.q;
+  const yourAns = q.chosen===null ? '(ekkert svar)' : (isTF ? ['Rétt','Rangt'][q.chosen] : q.opts[q.chosen]);
+  const rightAns = isTF ? ['Rétt','Rangt'][q.correct] : q.opts[q.correct];
+  const ok = q.chosen===q.correct;
+  const img = q.item.img && SIGNS[q.item.img] ? '<div class="review-img">'+SIGNS[q.item.img]+'</div>' : '';
+  return '<div class="review-item">'+
+    '<div class="review-q">'+(ok?'✅ ':'❌ ')+qtxt+'</div>'+ img +
+    (ok ? '' : '<div class="review-line you">Þitt svar: '+yourAns+'</div>')+
+    '<div class="review-line right">Rétt svar: '+rightAns+'</div>'+
+    '<div class="review-exp">'+q.item.e+'</div>'+
+  '</div>';
+}
+function renderReview(){
+  const wrong = quiz.filter(q=>q.chosen!==q.correct);
+  const list = showingAll ? quiz : wrong;
+  document.getElementById('rRevTitle').textContent = showingAll ? 'Allar spurningar' : 'Rangt svöruð atriði';
+  document.getElementById('rPerfect').classList.toggle('hidden', !(wrong.length===0 && !showingAll));
+  document.getElementById('rReview').innerHTML = list.map(reviewHTML).join('');
+  document.getElementById('showAllBtn').textContent = showingAll ? 'Sýna aðeins villurnar' : 'Sýna allar spurningar';
+}
+function toggleAll(){ showingAll = !showingAll; renderReview(); }
+function retryWrong(){
+  const wrongItems = quiz.filter(q=>q.chosen!==q.correct).map(q=>q.item);
+  if(wrongItems.length===0) return;
+  const kind = mode==='prof' ? 'tf' : 'mc';
+  quiz = makeQuiz(shuffle(wrongItems), kind);
+  idx = 0; showingAll = false;
+  document.getElementById('timer').classList.add('hidden');
+  stopTimer();
+  show('quiz');
+  renderQ();
+}
+function goHome(){ stopTimer(); show('home'); }
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* =================== RÆSING =================== */
+buildChips();
+document.getElementById('bankInfo').textContent =
+  'Spurningabankinn geymir '+BANK.length+' spurningar í '+Object.keys(CATS).length+' flokkum. Spurningar eru dregnar af handahófi í hvert sinn.';
+</script>
+</body>
+</html>
